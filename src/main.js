@@ -10,6 +10,7 @@ const {
   parseConfiguredBinding,
   mapMonsterForGuide
 } = require('./flyff-data.js');
+const { isColorClose } = require('./autoheal-utils.js');
 
 const FLYFF_URL     = 'https://universe.flyff.com';
 const FLYFF_MONSTER_API_URL = 'https://api.flyff.com/monster';
@@ -737,7 +738,35 @@ function randomizeInterval(baseMs) {
   return baseMs + (Math.random() * 2 - 1) * variation;
 }
 
-async function runBarLoop(account, barType, barCfg, barEntry, view) {
+function getPixelReference(img, x, y) {
+  if (!img || x == null || y == null) return null;
+  const { width, height } = img.getSize();
+  const px = Math.max(0, Math.min(width - 1, Math.round(x)));
+  const py = Math.max(0, Math.min(height - 1, Math.round(y)));
+  const bmp = img.toBitmap();
+  const i = (py * width + px) * 4;
+  return { r: bmp[i + 2], g: bmp[i + 1], b: bmp[i] };
+}
+
+async function checkUiOpenPixel(view, uiPixel) {
+  if (!view || !uiPixel || uiPixel.refR == null || uiPixel.refG == null || uiPixel.refB == null) return true;
+  try {
+    const cr = { x: Math.max(0, Math.round(uiPixel.x) - 1), y: Math.max(0, Math.round(uiPixel.y) - 3), width: 3, height: 7 };
+    const img = await view.webContents.capturePage(cr);
+    const sampleX = Math.max(0, Math.min(2, Math.round(uiPixel.x) - cr.x));
+    const sampleY = Math.max(0, Math.min(6, Math.round(uiPixel.y) - cr.y));
+    const pixel = getPixelReference(img, sampleX, sampleY);
+    const ref = { r: uiPixel.refR, g: uiPixel.refG, b: uiPixel.refB };
+    const ok = pixel ? isColorClose(pixel, ref, uiPixel.tolerance ?? 24) : false;
+    console.log(`[AutoHeal] UI-open check ${ok ? 'matched' : 'missed'}:`, { pixel, ref, uiPixel });
+    return ok;
+  } catch (e) {
+    console.error('[AutoHeal] UI-open check error:', e.message);
+    return true;
+  }
+}
+
+async function runBarLoop(account, barType, barCfg, barEntry, view, uiOpenPixel) {
   const baseDelay = Math.max((barCfg.intervalSec || barCfg.intervalMs/1000 || 0.5) * 1000, 200);
   const cooldown  = 1500;
   const actions  = barCfg.actions?.length
@@ -760,7 +789,15 @@ async function runBarLoop(account, barType, barCfg, barEntry, view) {
     const t0 = Date.now();
     try {
       if (view && mainWindow) {
-        if (pixelList) {
+        let shouldRun = true;
+        if (uiOpenPixel && uiOpenPixel.refR != null && uiOpenPixel.refG != null && uiOpenPixel.refB != null) {
+          shouldRun = await checkUiOpenPixel(view, uiOpenPixel);
+          if (!shouldRun) {
+            console.log(`[AutoHeal] ${account} UI is closed → skipping ${barType}`);
+          }
+        }
+
+        if (shouldRun && pixelList) {
           // Per-pixel scan: each pixel corresponds to actions[i].key
           const now = Date.now();
           for (let i = 0; i < pixelList.length && i < actions.length; i++) {
@@ -788,7 +825,7 @@ async function runBarLoop(account, barType, barCfg, barEntry, view) {
               }
             } catch (e2) { console.error(`[AutoHeal] pixel[${i}] error:`, e2.message); }
           }
-        } else {
+        } else if (shouldRun) {
           let pct = null;
           if (barRect) {
             const img = await view.webContents.capturePage(barRect);
@@ -849,7 +886,7 @@ function startAutoHeal(account) {
     if (!barCfg?.enabled) continue;
     if (!barEntry) continue;
     console.log(`[AutoHeal] ${account} ${barType} started – interval=${barCfg.intervalSec || barCfg.intervalMs/1000 || 0.5}sec`);
-    runBarLoop(account, barType, barCfg, barEntry, view);
+    runBarLoop(account, barType, barCfg, barEntry, view, acfg?.uiOpenPixel);
   }
 }
 
@@ -1287,16 +1324,28 @@ function setupIPC() {
       const cfg = loadConfig('autoheal.json') || {};
       if (!cfg[account]) cfg[account] = {};
       if (!cfg[account].barBounds) cfg[account].barBounds = {};
+
+      const pixelRef = lastPickerScreenshot ? getPixelReference(lastPickerScreenshot, rect.x, rect.y) : null;
+      const pixelEntry = pixelRef ? { x: rect.x, y: rect.y, refR: pixelRef.r, refG: pixelRef.g, refB: pixelRef.b } : { x: rect.x, y: rect.y };
+
+      if (barType === 'ui-open') {
+        cfg[account].uiOpenPixel = pixelEntry;
+        try { saveConfig('autoheal.json', cfg); } catch {}
+        console.log(`[AutoHeal] ${account} UI-open pixel saved:`, JSON.stringify(pixelEntry));
+        settingsWindow?.webContents.send('autoheal-rect-picked', { account, barType: 'ui-open', rect: pixelEntry });
+        return;
+      }
+
       const existing = cfg[account].barBounds[barType];
       const pixels = (existing?.mode === 'pixel' && Array.isArray(existing.pixels))
         ? [...existing.pixels]
         : [];
       while (pixels.length <= pixelIndex) pixels.push(null);
-      pixels[pixelIndex] = { x: rect.x, y: rect.y };
+      pixels[pixelIndex] = pixelEntry;
       cfg[account].barBounds[barType] = { mode: 'pixel', pixels };
       try { saveConfig('autoheal.json', cfg); } catch {}
       console.log(`[AutoHeal] ${account} ${barType} pixel[${pixelIndex}] saved: x=${rect.x} y=${rect.y}`);
-      settingsWindow?.webContents.send('autoheal-rect-picked', { account, barType, pixelIndex, rect: { x: rect.x, y: rect.y } });
+      settingsWindow?.webContents.send('autoheal-rect-picked', { account, barType, pixelIndex, rect: pixelEntry });
       return;
     }
 

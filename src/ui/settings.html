@@ -271,8 +271,22 @@
   <div id="tab-autoheal" class="tab-content">
     <p style="color:#555; font-size:11px; margin-bottom:10px;">
       <b style="color:#aaa">Bar mode:</b> drag-select the bar area (📐). Works for all bars, supports multiple thresholds.<br>
-      <b style="color:#aaa">Pixel mode:</b> click one pixel on the bar at the desired threshold position (📍). Bars must be full when picking.
+      <b style="color:#aaa">Pixel mode:</b> click one pixel on the bar at the desired threshold position (📍). Bars must be full when picking.<br>
+      <b style="color:#aaa">UI-open check:</b> pick a pixel in the corner of the UI so heal only runs while that UI is visible.
     </p>
+
+    <div style="margin-bottom:10px; padding:8px 10px; border:1px solid #333; border-radius:6px; background:#222;">
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:4px;">
+        <strong style="color:#aaa;">Account 1</strong>
+        <button class="btn-add" style="padding:2px 8px; font-size:11px;" onclick="pickUiOpenPixel('account1')">📍 Pick UI-open pixel</button>
+        <span id="ah1-ui-open-rect" style="color:#555; font-size:10px; font-family:monospace;">not set</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <strong style="color:#aaa;">Account 2</strong>
+        <button class="btn-add" style="padding:2px 8px; font-size:11px;" onclick="pickUiOpenPixel('account2')">📍 Pick UI-open pixel</button>
+        <span id="ah2-ui-open-rect" style="color:#555; font-size:10px; font-family:monospace;">not set</span>
+      </div>
+    </div>
 
     <h3>Account 1</h3>
     <span id="ah1-test" style="color:#88ff88; font-size:11px; display:block; margin-bottom:4px;"></span>
@@ -736,8 +750,12 @@
 
     function pickAh(account, barType) {
       const n    = account === 'account1' ? '1' : '2';
-      const mode = document.getElementById(`ah${n}-${bar}-mode`).value;
+      const mode = document.getElementById(`ah${n}-${barType}-mode`).value;
       window.flyff.openHpPicker(account, barType, mode);
+    }
+
+    function pickUiOpenPixel(account) {
+      window.flyff.openHpPicker(account, 'ui-open', 'pixel');
     }
 
     function pickAhPixel(account, barType, pixelIndex) {
@@ -905,6 +923,10 @@
           document.getElementById(`ah${n}-${bar}-enabled`).checked = !!bcfg.enabled;
           document.getElementById(`ah${n}-${bar}-interval`).value  = bcfg.intervalSec ?? (bcfg.intervalMs ? bcfg.intervalMs/1000 : def.intervalSec);
 
+          const uiRectEl = document.getElementById(`ah${n}-ui-open-rect`);
+          const uiPixel = acfg.uiOpenPixel;
+          uiRectEl.textContent = uiPixel ? `x:${uiPixel.x} y:${uiPixel.y}` : 'not set';
+
           const modeEl = document.getElementById(`ah${n}-${bar}-mode`);
           modeEl.value = isPixel ? 'pixel' : 'bar';
 
@@ -943,6 +965,7 @@
         const acc  = `account${n}`;
         const acfg = loadedAhConfig?.[acc] || {};
         cfg[acc] = { barBounds: acfg.barBounds ?? {} };
+        cfg[acc].uiOpenPixel = acfg.uiOpenPixel || null;
         for (const bar of ['hp', 'mp', 'fp']) {
           const def  = AH_DEFAULTS[bar];
           const mode = document.getElementById(`ah${n}-${bar}-mode`).value;
@@ -1012,6 +1035,16 @@
       if (!loadedAhConfig[account].barBounds) loadedAhConfig[account].barBounds = {};
       const n = account === 'account1' ? '1' : '2';
       const el = document.getElementById(`ah${n}-test`);
+
+      if (barType === 'ui-open') {
+        loadedAhConfig[account].uiOpenPixel = rect;
+        const n = account === 'account1' ? '1' : '2';
+        document.getElementById(`ah${n}-ui-open-rect`).textContent = `x:${rect.x} y:${rect.y}`;
+        el.style.color = '#88ff88';
+        el.textContent = 'UI-open pixel saved';
+        setTimeout(() => { el.textContent = ''; }, 4000);
+        return;
+      }
 
       if (pixelIndex != null) {
         // Pixel mode: update pixels array in loadedAhConfig
