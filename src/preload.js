@@ -33,7 +33,7 @@ contextBridge.exposeInMainWorld('flyff', {
   saveHotkeys:          (keys)          => ipcRenderer.send('save-hotkeys', keys),
   saveMacros:           (macros)        => ipcRenderer.send('save-macros', macros),
 
-  // --- Macros ausführen ---
+  // --- Run macros ---
   runMacro: (id) => ipcRenderer.send('run-macro', id),
 
   // --- Auto-Heal ---
@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld('flyff', {
   openHpPicker:       (account, barType, mode, pixelIndex) => ipcRenderer.send('open-hp-picker', { account, barType, mode, pixelIndex }),
   testHpCapture:      (account) => ipcRenderer.invoke('test-hp-capture', account),
 
-  // --- HP-Picker (wird im Picker-Fenster aufgerufen) ---
+  // --- HP picker (used in the picker window) ---
   hpPickerDone:   (rect) => ipcRenderer.send('hp-picker-done', rect),
   hpPickerCancel: ()     => ipcRenderer.send('hp-picker-cancel'),
 

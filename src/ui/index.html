@@ -15,7 +15,7 @@
       font-family: system-ui, sans-serif;
       font-size: 11px;
       user-select: none;
-      /* Gesamte Toolbar ist ziehbar – Buttons überschreiben das */
+      /* The entire toolbar is draggable; buttons override that */
       -webkit-app-region: drag;
     }
 
@@ -46,14 +46,14 @@
     }
     button:hover  { background: #2a2a6a; }
 
-    /* Aktiver Account */
+    /* Active account */
     button.active {
       background: #2a4a8a;
       border-color: #5a8ad8;
       color: #c8dcff;
     }
 
-    /* Automation läuft */
+    /* Automation is running */
     button.running {
       background: #1a4a1a;
       border-color: #3a9a3a;
@@ -386,9 +386,9 @@
       macros = await window.flyff.getMacros() || [];
       renderMacroButtons();
 
-      // Gamepad-Config laden und Polling starten.
-      // Polling läuft hier im Renderer-Hauptkontext, weil navigator.getGamepads()
-      // im isolierten Preload-Kontext nicht zuverlässig verfügbar ist.
+      // Load the gamepad config and start polling.
+      // Polling runs here in the renderer main context because navigator.getGamepads()
+      // is not reliably available in the isolated preload context.
       currentButtonMap = await window.flyff.getGamepadConfig();
       startGamepadPolling();
 
@@ -477,7 +477,7 @@
       updateAccountButtons(state);
     });
 
-    // ── Gamepad-Polling (läuft im Renderer-Hauptkontext) ─────────────────────
+    // ── Gamepad polling (runs in the renderer main context) ─────────────────────
 
     let currentButtonMap = null;
 
@@ -526,13 +526,13 @@
         gpLabel.style.color = '#44ee44';
 
         for (const gp of connected) {
-          // Linker Stick → WASD
+          // Left stick → WASD
           updateAxis('D',  gp.axes[0] || 0);
           updateAxis('A', -(gp.axes[0] || 0));
           updateAxis('S',  gp.axes[1] || 0);
           updateAxis('W', -(gp.axes[1] || 0));
 
-          // Buttons: sofort, kein Throttle
+          // Buttons: immediate, no throttle
           gp.buttons.forEach((btn, idx) => {
             const key        = `${gp.index}_${idx}`;
             const pressed    = btn.pressed;
@@ -553,7 +553,7 @@
             prevBtns[key] = pressed;
           });
 
-          // Rechter Stick → Pfeil-Tasten (Kamera)
+          // Right stick → arrow keys (camera)
           const rx = gp.axes[2] || 0;
           const ry = gp.axes[3] || 0;
           updateAxis('ArrowLeft',   rx);
@@ -578,7 +578,7 @@
         if (line.startsWith('## '))      { const h = document.createElement('h2'); h.textContent = line.slice(3); el.appendChild(h); }
         else if (line.startsWith('### ')) { const h = document.createElement('h3'); h.textContent = line.slice(4); el.appendChild(h); }
         else if (line.startsWith('- '))  { const ul = el.lastChild?.tagName === 'UL' ? el.lastChild : el.appendChild(document.createElement('ul')); const li = document.createElement('li'); li.textContent = line.slice(2); ul.appendChild(li); }
-        // Leerzeilen und andere Zeilen überspringen
+        // Skip blank lines and other lines
       });
       return el;
     }
@@ -587,7 +587,7 @@
       const overlay = document.getElementById('changelog-overlay');
       if (overlay.style.display === 'block') { closeChangelog(); return; }
       
-      closeGuide(); // Guide schließen falls offen
+      closeGuide(); // close the guide if it is open
 
       const content = document.getElementById('changelog-content');
       if (!content.hasChildNodes()) {

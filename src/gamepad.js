@@ -1,21 +1,21 @@
 'use strict';
 
-// Wird im Preload-Context ausgeführt – hat Zugriff auf browser-seitige Gamepad-API
-// und auf Node.js-seitiges ipcRenderer (da preload sandbox: false)
+// Runs in the preload context — it has access to the browser-side Gamepad API
+// and to the Node.js-side ipcRenderer (because preload uses sandbox: false)
 
 const POLL_INTERVAL_MS = 16;   // ~60 fps
 const DEADZONE = 0.15;
 const SPEED_LEFT  = 8;          // Linker Stick: Haupt-Mausbewegung
 const SPEED_RIGHT = 4;          // Rechter Stick: Kamera (langsamer)
 
-// Merkt sich welche Buttons beim letzten Poll gedrückt waren (Edge-Detection)
+// Remembers which buttons were pressed on the previous poll (edge detection)
 const prevButtonState = {};
 
 function applyDeadzone(value) {
   return Math.abs(value) < DEADZONE ? 0 : value;
 }
 
-// Startet das Polling. ipcRenderer wird aus dem Preload übergeben.
+// Starts polling. ipcRenderer is passed in from preload.
 function start(ipcRenderer, buttonMap) {
   const mapping = buttonMap || {};
 
@@ -25,10 +25,10 @@ function start(ipcRenderer, buttonMap) {
     for (const gp of gamepads) {
       if (!gp) continue;
 
-      // Linker Stick (axes 0 + 1) → schnelle Mausbewegung
+      // Left stick (axes 0 + 1) → fast mouse movement
       const lx = applyDeadzone(gp.axes[0] || 0);
       const ly = applyDeadzone(gp.axes[1] || 0);
-      // Rechter Stick (axes 2 + 3) → Kamerabewegung, gedämpft
+      // Right stick (axes 2 + 3) → camera movement, dampened
       const rx = applyDeadzone(gp.axes[2] || 0);
       const ry = applyDeadzone(gp.axes[3] || 0);
 
@@ -39,7 +39,7 @@ function start(ipcRenderer, buttonMap) {
         ipcRenderer.send('gamepad-mouse-move', { dx, dy });
       }
 
-      // Buttons: nur beim erstmaligen Drücken auslösen (kein Auto-Repeat)
+      // Buttons: trigger only on the initial press (no auto-repeat)
       gp.buttons.forEach((btn, idx) => {
         const stateKey = `${gp.index}_${idx}`;
         const isPressed = btn.pressed;

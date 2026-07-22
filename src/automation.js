@@ -1,6 +1,6 @@
 'use strict';
 
-// Laufzeit-Zustand pro Account: ob aktiv und aktive Timer-IDs
+// Runtime state per account: whether it is active and the active timer IDs
 const state = {
   account1: { running: false, timers: [] },
   account2: { running: false, timers: [] },
@@ -8,7 +8,7 @@ const state = {
   account4: { running: false, timers: [] }
 };
 
-// Aktuelle Automation-Config (wird von main.js gesetzt)
+// Current automation config (set by main.js)
 let config = {
   account1: { actions: [] },
   account2: { actions: [] },
@@ -20,23 +20,23 @@ function setConfig(automationConfig) {
   if (automationConfig) config = automationConfig;
 }
 
-// Sendet einen einzelnen Tastendruck an die WebContents eines Game-Views
+// Sends a single key press to the WebContents of a game view
 function sendKey(webContents, keyCode) {
   try {
     webContents.sendInputEvent({ type: 'keyDown', keyCode });
     webContents.sendInputEvent({ type: 'keyUp', keyCode });
   } catch {
-    // WebContentsView noch nicht bereit oder gerade navigiert – nächstes Intervall versucht es erneut
+    // WebContentsView is not ready yet or is currently navigating — the next interval will try again
   }
 }
 
-// ±10% Variation für Anti-Detection
+// ±10% variation for anti-detection
 function randomizeInterval(baseMs) {
   const variation = baseMs * 0.1;
   return baseMs + (Math.random() * 2 - 1) * variation;
 }
 
-// Startet die Automation für einen Account
+// Starts automation for an account
 function start(account, webContents, onStateChange) {
   const s = state[account];
   if (!s) return; // Safety check for undefined accounts
@@ -47,7 +47,7 @@ function start(account, webContents, onStateChange) {
   actions.forEach(action => {
     if (!action.enabled) return;
 
-    // Rekursive Funktion mit randomisiertem Intervall
+    // Recursive function with a randomized interval
     function scheduleNext() {
       if (!s.running) return;
       const intervalMs = (action.intervalSec || action.intervalMs/1000 || 3) * 1000; // sec→ms, fallback
@@ -55,7 +55,7 @@ function start(account, webContents, onStateChange) {
       const timer = setTimeout(() => {
         if (!s.running) return;
         sendKey(webContents, action.key);
-        scheduleNext(); // nächste Ausführung planen
+        scheduleNext(); // schedule the next execution
       }, nextDelay);
       s.timers.push(timer);
     }
@@ -66,7 +66,7 @@ function start(account, webContents, onStateChange) {
   if (onStateChange) onStateChange(account, true);
 }
 
-// Stoppt alle Timer eines Accounts
+// Stops all timers for an account
 function stop(account, onStateChange) {
   const s = state[account];
   if (!s) return; // Safety check for undefined accounts

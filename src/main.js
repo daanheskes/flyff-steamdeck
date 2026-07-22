@@ -15,14 +15,14 @@ const { isColorClose } = require('./autoheal-utils.js');
 const FLYFF_URL     = 'https://universe.flyff.com';
 const FLYFF_MONSTER_API_URL = 'https://api.flyff.com/monster';
 
-// sendInputEvent erwartet DOM-Keywerte, nicht Accelerator-Namen
+// sendInputEvent expects DOM key values, not accelerator names
 const KEY_NAME_MAP = { 'Space': ' ', 'Return': '\r', 'Enter': '\r', 'ArrowLeft': 'Left', 'ArrowRight': 'Right', 'ArrowUp': 'Up', 'ArrowDown': 'Down' };
 function normalizeKey(k) { return KEY_NAME_MAP[k] ?? k; }
 const TOOLBAR_H     = 30;     // Toolbar height in pixels
 const DEFAULT_W     = 1280;
 const DEFAULT_H     = 800;
 
-// electron-store ist ESM-only (v8+) – dynamischer Import nötig
+// Electron Store is ESM-only (v8+) — dynamic import is required
 let store;
 async function initStore() {
   const { default: Store } = await import('electron-store');
@@ -36,9 +36,9 @@ async function initStore() {
 }
 
 // ── Config-Dateien ────────────────────────────────────────────────────────────
-// Nutzer-Configs liegen in app.getPath('userData') (~/.config/flyff-wrapper/)
-// damit AppImage-Updates die gespeicherten Einstellungen nicht überschreiben.
-// Beim ersten Start wird die gebündelte Default-Config dorthin kopiert.
+// User configs live in app.getPath('userData') (~/.config/flyff-wrapper/)
+// so AppImage updates do not overwrite saved settings.
+// On first start, the bundled default config is copied there.
 
 function userConfigPath(filename) {
   return path.join(app.getPath('userData'), filename);
@@ -100,7 +100,7 @@ const hpHealActive  = {};  // account → boolean: steuert den async Heal-Loop
 let ocrWorker = null;
 let lastPickerScreenshot = null;
 
-// Game Views: 1 & 2 sind immer geladen, 3 & 4 optional (null bis geöffnet)
+// Game views 1 & 2 are always loaded; 3 & 4 are optional (null until opened)
 const gameViews = {
   account1: null,
   account2: null,
@@ -111,9 +111,9 @@ const gameViews = {
 let activeAccount = 'account1';
 let overlayOpen   = false;  // Guide oder Changelog sichtbar → Game-Views versteckt halten
 
-// Virtuelle Mausposition für Gamepad-Delta-Bewegung
+// Virtual mouse position for gamepad delta movement
 const cursor  = { x: DEFAULT_W / 2, y: DEFAULT_H / 2 };
-const lastSent = { x: -1, y: -1 };   // verhindert Flood bei Cursor an der Kante
+const lastSent = { x: -1, y: -1 };   // prevents flooding at the cursor edge
 
 // ── Hauptfenster ──────────────────────────────────────────────────────────────
 
@@ -243,7 +243,7 @@ function createGameView(account) {
 }
 
 function createGameViews() {
-  // Account 1 & 2 werden beim Start immer geladen
+  // Accounts 1 & 2 are always loaded at startup
   createGameView('account1');
   createGameView('account2');
   updateViewBounds();
@@ -281,8 +281,8 @@ function closeAccount(account) {
   mainWindow?.webContents.send('account-closed', account);
 }
 
-// Setzt Bounds und Sichtbarkeit der Views je nach aktivem Account.
-// Ist ein Overlay offen, bleibt der aktive View versteckt bis es geschlossen wird.
+// Sets bounds and visibility for views based on the active account.
+// If an overlay is open, the active view stays hidden until it is closed.
 function updateViewBounds() {
   if (!mainWindow) return;
   const [w, h] = mainWindow.getContentSize();
@@ -344,11 +344,11 @@ async function sendFollowBoard(account) {
 
   console.log(`[FollowBoard] Sending to ${account}: ${hotkeys.followAction}, then ${hotkeys.boardAction}`);
 
-  // Z drücken
+  // Press Z
   await sendConfiguredBinding(view, hotkeys.followAction);
   await new Promise(r => setTimeout(r, 150));
 
-  // Alt+6 drücken
+  // Press Alt+6
   await sendConfiguredBinding(view, hotkeys.boardAction);
 }
 
@@ -499,9 +499,9 @@ function openQuestUrl(url) {
   questWindow.on('closed', () => { questWindow = null; });
 }
 
-// ── CDP-Tastendruck (für Keys die sendInputEvent nicht erreicht) ──────────────
-// Puppeteer/Playwright-Äquivalent: setzt code, key, text, windowsVirtualKeyCode korrekt
-// und erzeugt isTrusted:true – identisch zu echtem OS-Tastendruck aus Sicht des Spiels
+// ── CDP key press (for keys that sendInputEvent does not reach) ──────────────
+// Puppeteer/Playwright equivalent: sets code, key, text, and windowsVirtualKeyCode correctly
+// and produces isTrusted:true — identical to real OS key input from the game’s perspective
 
 async function sendKeyCDP(view, keyDef) {
   if (!view) return;
@@ -514,7 +514,7 @@ async function sendKeyCDP(view, keyDef) {
     if (keyDef.text) {
       await dbg.sendCommand('Input.dispatchKeyEvent', { type: 'char', ...keyDef });
     }
-    // 80ms halten – Spiel pollt Input per rAF (~16ms); keyUp im selben Tick = Taste nie "gedrückt"
+    // Hold for 80ms — the game polls input via rAF (~16ms); sending keyUp in the same tick means the key is never considered "pressed"
     await new Promise(r => setTimeout(r, 80));
     await dbg.sendCommand('Input.dispatchKeyEvent', { type: 'keyUp', ...keyDef });
   } catch {}
@@ -526,10 +526,10 @@ const CDP_KEYS = {
 };
 
 // ── HP-basiertes Autoheal – Bar-Fill-Scan ────────────────────────────────────
-// Scannt die Mittellinie des gewählten Rects von rechts nach links.
-// Erstes gesättigtes (gefärbtes, nicht-graues) Pixel = rechte Füllkante.
-// HP% = Füllkante / Balkenbreite × 100
-// Funktioniert für beliebige Balkenfarben (rot, blau, grün).
+// Scans the middle line of the selected rect from right to left.
+// The first saturated (colored, not gray) pixel is the right fill edge.
+// HP% = fill edge / bar width × 100
+// Works for any bar colors (red, blue, green).
 
 // v1 (max rightmost pixel – fast but sensitive to stray text pixels)
 function estimateHpFromBarFill_v1(bitmap, width, height, barType, physLeft = null, physRight = null) {
@@ -732,7 +732,7 @@ function stopAutoHeal(account) {
   }
 }
 
-// ±10% Variation für Anti-Detection
+// ±10% variation for anti-detection
 function randomizeInterval(baseMs) {
   const variation = baseMs * 0.1;
   return baseMs + (Math.random() * 2 - 1) * variation;
@@ -896,7 +896,7 @@ async function openHpPicker(account, barType, mode = 'bar', pixelIndex = 0) {
   currentPickerTarget = { account, barType, mode, pixelIndex };
   const bounds = mainWindow.getBounds();
 
-  // Game-View-Screenshot als Hintergrund – funktioniert auch in Gamescope (kein Compositor nötig)
+  // Game-view screenshot as the background — also works in Gamescope (no compositor needed)
   let bgDataUrl = null;
   try {
     const activeView = gameViews[activeAccount];
@@ -930,9 +930,9 @@ async function openHpPicker(account, barType, mode = 'bar', pixelIndex = 0) {
 }
 
 // ── Auto-Targeting: Spiralsuche im Game-View-Kontext ─────────────────────────
-// Wird via executeJavaScript in den aktiven WebContentsView injiziert.
-// Bewegt den Cursor spiralförmig von der Bildschirmmitte nach außen und klickt,
-// sobald das Spiel via Cursor-Style-Änderung ein hoverbares Ziel signalisiert.
+// Injected via executeJavaScript into the active WebContentsView.
+// Moves the cursor spirally from the center of the screen outward and clicks
+// as soon as the game signals a hoverable target via a cursor-style change.
 
 function spiralSearch(maxRadius) {
   if (window.__flyffTargetSearch) return;
@@ -1017,7 +1017,7 @@ function setupIPC() {
     updateViewBounds();
   });
 
-  // Zustand für Toolbar-Initialisierung liefern
+  // Provide state for toolbar initialization
   ipcMain.handle('get-view-size', () => {
     const [w, h] = mainWindow.getContentSize();
     return { w, h: h - TOOLBAR_H };
@@ -1033,12 +1033,12 @@ function setupIPC() {
     version: app.getVersion()
   }));
 
-  // Automation-Config für Settings-Fenster liefern
+  // Provide automation config to the settings window
   ipcMain.handle('get-automation-config', () => {
     return loadConfig('automation.json', true);
   });
 
-  // Gamepad-Config für Renderer liefern
+  // Provide gamepad config to the renderer
   ipcMain.handle('get-gamepad-config', () => {
     return loadConfig('gamepad.json', true);
   });
@@ -1156,7 +1156,7 @@ function setupIPC() {
     }
   });
 
-  // Neue Automation-Config übernehmen und in Datei schreiben
+  // Apply the new automation config and write it to file
   ipcMain.on('save-automation-config', (_, cfg) => {
     try { saveConfig('automation.json', cfg); } catch (e) {
       console.error('Fehler beim Speichern der Automation-Config:', e.message);
@@ -1180,7 +1180,7 @@ function setupIPC() {
     }
   });
 
-  // Gamepad-Mausbewegung: Delta auf virtuelle Position anwenden und an aktiven View senden
+  // Gamepad mouse movement: apply delta to the virtual position and send it to the active view
   ipcMain.on('gamepad-mouse-move', (_, { dx, dy }) => {
     const view = gameViews[activeAccount];
     if (!view || !mainWindow) return;
@@ -1189,7 +1189,7 @@ function setupIPC() {
     cursor.y = Math.max(0, Math.min(h - TOOLBAR_H - 1, cursor.y + dy));
     const rx = Math.round(cursor.x);
     const ry = Math.round(cursor.y);
-    if (rx === lastSent.x && ry === lastSent.y) return;  // Position unverändert → nicht senden
+    if (rx === lastSent.x && ry === lastSent.y) return;  // Position unchanged → do not send
     lastSent.x = rx;
     lastSent.y = ry;
     try {
@@ -1197,18 +1197,18 @@ function setupIPC() {
     } catch {}
   });
 
-  // Cursor zur Mitte zurücksetzen wenn Stick losgelassen (nach Kamera-Schwenk)
+  // Reset the cursor to the center when the stick is released (after camera panning)
   ipcMain.on('gamepad-reset-cursor', () => {
     if (!mainWindow) return;
     const [w, h] = mainWindow.getContentSize();
     cursor.x   = w / 2;
     cursor.y   = (h - TOOLBAR_H) / 2;
-    lastSent.x = -1;  // nächste Bewegung erzwingt Send
+    lastSent.x = -1;  // the next movement forces a send
     lastSent.y = -1;
   });
 
-  // Gamepad-Button: kurzer Tastendruck
-  // Space/J via CDP (80ms Hold nötig weil Spiel Input per rAF pollt); alle anderen Keys via sendInputEvent sofort
+  // Gamepad button: short key press
+  // Space/J via CDP (80ms hold is needed because the game polls input via rAF); all other keys use sendInputEvent immediately
   ipcMain.on('gamepad-button', (_, { keyCode }) => {
     const view = gameViews[activeAccount];
     if (!view) return;
@@ -1224,7 +1224,7 @@ function setupIPC() {
     } catch {}
   });
 
-  // Gamepad-WASD: Taste gedrückt halten (linker Stick)
+  // Gamepad WASD: hold the key down (left stick)
   ipcMain.on('gamepad-keydown', (_, { keyCode }) => {
     const view = gameViews[activeAccount];
     if (!view) return;
@@ -1237,7 +1237,7 @@ function setupIPC() {
     try { view.webContents.sendInputEvent({ type: 'keyUp', keyCode: normalizeKey(keyCode) }); } catch {}
   });
 
-  // Mausklicks für Controller-Buttons (__LCLICK / __RHOLD)
+  // Mouse clicks for controller buttons (__LCLICK / __RHOLD)
   ipcMain.on('gamepad-mousedown', (_, { button }) => {
     const view = gameViews[activeAccount];
     if (!view) return;
@@ -1308,10 +1308,10 @@ function setupIPC() {
   });
 
 
-  // HP-Bar-Picker öffnen
+  // Open the HP bar picker
   ipcMain.on('open-hp-picker', (_, { account, barType, mode, pixelIndex }) => openHpPicker(account, barType, mode, pixelIndex ?? 0).catch(e => console.error('HP picker:', e)));
 
-  // Picker: Rechteck wurde ausgewählt → direkt als barBounds[barType] speichern
+  // Picker: a rectangle was selected → save it directly as barBounds[barType]
   ipcMain.on('hp-picker-done', (_, rect) => {
     const target = currentPickerTarget;
     if (!target) { pickerWindow?.close(); return; }
@@ -1394,7 +1394,7 @@ function setupIPC() {
   // Picker: abgebrochen
   ipcMain.on('hp-picker-cancel', () => { pickerWindow?.close(); });
 
-  // Alle Bars einmalig messen (Test-Button) – speichert Debug-PNGs in userData
+  // Measure all bars once (test button) — saves debug PNGs in userData
   ipcMain.handle('test-hp-capture', async (_, account) => {
     const cfg  = loadConfig('autoheal.json');
     const acfg = cfg?.[account];
@@ -1460,7 +1460,7 @@ function setupIPC() {
     mainWindow?.webContents.send('macros-updated', macros);
   });
 
-  // Macro ausführen: Automation pausieren, Keys sequenziell senden, Automation fortsetzen
+  // Run macro: pause automation, send keys sequentially, resume automation
   ipcMain.on('run-macro', (_, macroId) => {
     const macros = loadConfig('macros.json') || [];
     const macro  = macros.find(m => m.id === macroId);
