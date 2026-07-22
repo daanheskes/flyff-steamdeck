@@ -10,6 +10,14 @@ const {
   parseConfiguredBinding,
   mapMonsterForGuide
 } = require('./flyff-data.js');
+const {
+  normalizeQuestProfileStore,
+  createQuestProfile,
+  renameQuestProfile,
+  deleteQuestProfile,
+  switchQuestProfile,
+  getActiveQuestProgress
+} = require('./quest-profile-store.js');
 const { isColorClose } = require('./autoheal-utils.js');
 
 const FLYFF_URL     = 'https://universe.flyff.com';
@@ -758,7 +766,6 @@ async function checkUiOpenPixel(view, uiPixel) {
     const pixel = getPixelReference(img, sampleX, sampleY);
     const ref = { r: uiPixel.refR, g: uiPixel.refG, b: uiPixel.refB };
     const ok = pixel ? isColorClose(pixel, ref, uiPixel.tolerance ?? 24) : false;
-    console.log(`[AutoHeal] UI-open check ${ok ? 'matched' : 'missed'}:`, { pixel, ref, uiPixel });
     return ok;
   } catch (e) {
     console.error('[AutoHeal] UI-open check error:', e.message);
@@ -792,9 +799,6 @@ async function runBarLoop(account, barType, barCfg, barEntry, view, uiOpenPixel)
         let shouldRun = true;
         if (uiOpenPixel && uiOpenPixel.refR != null && uiOpenPixel.refG != null && uiOpenPixel.refB != null) {
           shouldRun = await checkUiOpenPixel(view, uiOpenPixel);
-          if (!shouldRun) {
-            console.log(`[AutoHeal] ${account} UI is closed → skipping ${barType}`);
-          }
         }
 
         if (shouldRun && pixelList) {
@@ -1097,30 +1101,100 @@ function setupIPC() {
     } catch { return []; }
   });
 
-  ipcMain.handle('get-quest-progress', () => {
-    const raw = store.get('questProgress', {});
-    // Migration: convert old boolean format to { done, skipped }
+  function migrateQuestProgressEntry(val) {
+    if (typeof val === 'boolean') {
+      return { done: val, skipped: false };
+    }
+    if (typeof val === 'object' && val !== null) {
+      return { done: !!val.done, skipped: !!val.skipped };
+    }
+    return { done: false, skipped: false };
+  }
+
+  function migrateQuestProgressMap(raw) {
     const migrated = {};
-    for (const [key, val] of Object.entries(raw)) {
-      if (typeof val === 'boolean') {
-        migrated[key] = { done: val, skipped: false };
-      } else if (typeof val === 'object' && val !== null) {
-        migrated[key] = { done: !!val.done, skipped: !!val.skipped };
-      } else {
-        migrated[key] = { done: false, skipped: false };
-      }
+    for (const [key, val] of Object.entries(raw || {})) {
+      migrated[key] = migrateQuestProgressEntry(val);
     }
     return migrated;
+  }
+
+  function loadQuestProfileStore() {
+    const legacyProgress = store.get('questProgress', {});
+    const existing = store.get('questProfiles');
+
+    if (existing && (existing.profiles || existing.activeProfileId)) {
+      return normalizeQuestProfileStore(existing);
+    }
+
+    const migratedProfiles = [{ id: 'default', name: 'Default', progress: migrateQuestProgressMap(legacyProgress) }];
+    const profileStore = normalizeQuestProfileStore({ activeProfileId: 'default', profiles: migratedProfiles });
+    store.set('questProfiles', profileStore);
+    return profileStore;
+  }
+
+  ipcMain.handle('get-quest-progress', () => {
+    const profileStore = loadQuestProfileStore();
+    return {
+      activeProfileId: profileStore.activeProfileId,
+      profiles: profileStore.profiles.map(profile => ({ id: profile.id, name: profile.name, progress: profile.progress || {} })),
+      progress: getActiveQuestProgress(profileStore)
+    };
   });
 
   ipcMain.on('save-quest-progress', (_, progress) => {
-    store.set('questProgress', progress);
+    const profileStore = loadQuestProfileStore();
+    const activeProfile = profileStore.profiles.find(profile => profile.id === profileStore.activeProfileId) || profileStore.profiles[0];
+    const nextProfiles = profileStore.profiles.map(profile => profile.id === activeProfile.id
+      ? { ...profile, progress: migrateQuestProgressMap(progress || {}) }
+      : profile);
+    store.set('questProfiles', { ...profileStore, profiles: nextProfiles });
+  });
+
+  ipcMain.handle('create-quest-profile', (_, name) => {
+    const nextState = createQuestProfile(loadQuestProfileStore(), name);
+    store.set('questProfiles', nextState);
+    return {
+      activeProfileId: nextState.activeProfileId,
+      profiles: nextState.profiles.map(profile => ({ id: profile.id, name: profile.name, progress: profile.progress || {} })),
+      progress: getActiveQuestProgress(nextState)
+    };
+  });
+
+  ipcMain.handle('rename-quest-profile', (_, profileId, name) => {
+    const nextState = renameQuestProfile(loadQuestProfileStore(), profileId, name);
+    store.set('questProfiles', nextState);
+    return {
+      activeProfileId: nextState.activeProfileId,
+      profiles: nextState.profiles.map(profile => ({ id: profile.id, name: profile.name, progress: profile.progress || {} })),
+      progress: getActiveQuestProgress(nextState)
+    };
+  });
+
+  ipcMain.handle('delete-quest-profile', (_, profileId) => {
+    const nextState = deleteQuestProfile(loadQuestProfileStore(), profileId);
+    store.set('questProfiles', nextState);
+    return {
+      activeProfileId: nextState.activeProfileId,
+      profiles: nextState.profiles.map(profile => ({ id: profile.id, name: profile.name, progress: profile.progress || {} })),
+      progress: getActiveQuestProgress(nextState)
+    };
+  });
+
+  ipcMain.handle('switch-quest-profile', (_, profileId) => {
+    const nextState = switchQuestProfile(loadQuestProfileStore(), profileId);
+    store.set('questProfiles', nextState);
+    return {
+      activeProfileId: nextState.activeProfileId,
+      profiles: nextState.profiles.map(profile => ({ id: profile.id, name: profile.name, progress: profile.progress || {} })),
+      progress: getActiveQuestProgress(nextState)
+    };
   });
 
   // Export quest progress as JSON file
   ipcMain.handle('export-quest-progress', async () => {
     const { dialog } = require('electron');
-    const progress = store.get('questProgress', {});
+    const payload = loadQuestProfileStore();
     const result = await dialog.showSaveDialog({
       title: 'Export Quest Progress',
       defaultPath: `flyff-quest-progress-${new Date().toISOString().slice(0, 10)}.json`,
@@ -1130,7 +1204,7 @@ function setupIPC() {
     });
     if (result.canceled || !result.filePath) return { success: false, canceled: true };
     try {
-      fs.writeFileSync(result.filePath, JSON.stringify(progress, null, 2), 'utf8');
+      fs.writeFileSync(result.filePath, JSON.stringify(payload, null, 2), 'utf8');
       return { success: true, path: result.filePath };
     } catch (e) {
       return { success: false, error: e.message };
@@ -1149,8 +1223,14 @@ function setupIPC() {
     if (result.canceled || !result.filePaths.length) return { success: false, canceled: true };
     try {
       const data = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8'));
-      store.set('questProgress', data);
-      return { success: true, count: Object.keys(data).length };
+      const profileStore = normalizeQuestProfileStore(data);
+      store.set('questProfiles', profileStore);
+      return {
+        success: true,
+        count: Object.keys(getActiveQuestProgress(profileStore)).length,
+        activeProfileId: profileStore.activeProfileId,
+        profiles: profileStore.profiles.map(profile => ({ id: profile.id, name: profile.name, progress: profile.progress || {} }))
+      };
     } catch (e) {
       return { success: false, error: e.message };
     }

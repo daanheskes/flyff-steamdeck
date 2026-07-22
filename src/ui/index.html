@@ -605,7 +605,7 @@
 
     // ── Guide-Overlay (Quests & Monsters) ─────────────────────────────────────
 
-    let guideState = { activeTab: 'quests', questFilter: 'open', dailyLevel: 0, quests: [], monsters: [], questlines: [], dailies: [], progress: {} };
+    let guideState = { activeTab: 'quests', questFilter: 'open', dailyLevel: 0, quests: [], monsters: [], questlines: [], dailies: [], progress: {}, profiles: [], activeProfileId: null };
 
     async function openGuide() {
       const overlay = document.getElementById('guide-overlay');
@@ -617,7 +617,12 @@
       if (guideState.monsters.length === 0)    guideState.monsters    = await window.flyff.getMonsters()    || [];
       if (guideState.questlines.length === 0)  guideState.questlines  = await window.flyff.getQuestlines()  || [];
       if (guideState.dailies.length === 0)     guideState.dailies     = await window.flyff.getDailies()     || [];
-      guideState.progress = await window.flyff.getQuestProgress() || {};
+
+      const profileState = await window.flyff.getQuestProgress();
+      guideState.progress = profileState.progress || {};
+      guideState.profiles = profileState.profiles || [];
+      guideState.activeProfileId = profileState.activeProfileId || null;
+      renderProfileControls();
 
       renderGuide();
       overlay.style.display = 'block';
@@ -642,6 +647,11 @@
       ['quests', 'questlines', 'dailies', 'monsters'].forEach(t => {
         document.getElementById('tab-' + t)?.classList.toggle('active', t === tab);
       });
+      if (tab !== 'quests') {
+        if (document.getElementById('guide-search').value.startsWith('ql:')) {
+          document.getElementById('guide-search').value = "";
+        }
+      }
       const filterBar = document.getElementById('quest-filter-bar');
       const dailyBar = document.getElementById('daily-level-bar');
       if (filterBar) filterBar.style.display = tab === 'quests' ? 'flex' : 'none';
@@ -663,6 +673,105 @@
     }
 
     function filterGuide() { renderGuide(); }
+
+    function showCustomPrompt(message, defaultValue = '') {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById('promptOverlay');
+        const label = document.getElementById('promptLabel');
+        const input = document.getElementById('promptInput');
+        const form = document.getElementById('promptForm');
+        const cancelBtn = document.getElementById('promptCancel');
+
+        label.textContent = message;
+        input.value = defaultValue;
+        overlay.style.display = 'flex';
+
+        input.focus();
+        input.select();
+
+        const onSubmit = (e) => {
+          e.preventDefault();
+          cleanup();
+          resolve(input.value);
+        };
+
+        const onCancel = () => {
+          cleanup();
+          resolve(null);
+        };
+
+        const cleanup = () => {
+          overlay.style.display = 'none';
+          form.removeEventListener('submit', onSubmit);
+          cancelBtn.removeEventListener('click', onCancel);
+        };
+
+        form.addEventListener('submit', onSubmit, { once: true });
+        cancelBtn.addEventListener('click', onCancel, { once: true });
+      });
+    }
+
+    function renderProfileControls() {
+      const select = document.getElementById('profile-select');
+      if (!select) return;
+      select.innerHTML = '';
+      guideState.profiles.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = profile.name;
+        if (profile.id === guideState.activeProfileId) option.selected = true;
+        select.appendChild(option);
+      });
+      const active = guideState.profiles.find(profile => profile.id === guideState.activeProfileId) || guideState.profiles[0];
+    }
+
+    async function createProfile() {
+      const name = await showCustomPrompt('Enter a profile name:', 'New Profile');
+      if (name === null || !name.trim()) return;
+      const profileState = await window.flyff.createQuestProfile(name.trim());
+      guideState.progress = profileState.progress || {};
+      guideState.profiles = profileState.profiles || [];
+      guideState.activeProfileId = profileState.activeProfileId || null;
+      renderProfileControls();
+      renderGuide();
+    }
+
+    async function renameProfile() {
+      const active = guideState.profiles.find(profile => profile.id === guideState.activeProfileId) || guideState.profiles[0];
+      if (!active) return;
+      const name = await showCustomPrompt('Enter a new profile name:', active.name);
+      if (name === null || !name.trim()) return;
+      const profileState = await window.flyff.renameQuestProfile(active.id, name.trim());
+      guideState.profiles = profileState.profiles || [];
+      guideState.activeProfileId = profileState.activeProfileId || null;
+      renderProfileControls();
+      renderGuide();
+    }
+
+    async function deleteProfile() {
+      const active = guideState.profiles.find(profile => profile.id === guideState.activeProfileId) || guideState.profiles[0];
+      if (!active) return;
+      if (guideState.profiles.length <= 1) {
+        alert('At least one profile is required.');
+        return;
+      }
+      if (!confirm(`Delete profile "${active.name}"?`)) return;
+      const profileState = await window.flyff.deleteQuestProfile(active.id);
+      guideState.progress = profileState.progress || {};
+      guideState.profiles = profileState.profiles || [];
+      guideState.activeProfileId = profileState.activeProfileId || null;
+      renderProfileControls();
+      renderGuide();
+    }
+
+    async function switchProfile(profileId) {
+      const profileState = await window.flyff.switchQuestProfile(profileId);
+      guideState.progress = profileState.progress || {};
+      guideState.profiles = profileState.profiles || [];
+      guideState.activeProfileId = profileState.activeProfileId || null;
+      renderProfileControls();
+      renderGuide();
+    }
 
     function setQuestStatus(questId, status) {
       if (!guideState.progress[questId]) guideState.progress[questId] = { done: false, skipped: false };
@@ -693,7 +802,11 @@
     async function importProgress() {
       const result = await window.flyff.importQuestProgress();
       if (result.success) {
-        guideState.progress = await window.flyff.getQuestProgress();
+        const profileState = await window.flyff.getQuestProgress();
+        guideState.progress = profileState.progress || {};
+        guideState.profiles = profileState.profiles || [];
+        guideState.activeProfileId = profileState.activeProfileId || null;
+        renderProfileControls();
         renderGuide();
         alert(`Imported ${result.count} quest entries successfully!`);
       } else if (result.error) {
@@ -703,7 +816,7 @@
     }
 
     function filterByQuestline(lineName) {
-      document.getElementById('guide-search').value = lineName;
+      document.getElementById('guide-search').value = 'ql:' + lineName;
       switchGuideTab('quests');
     }
 
@@ -716,19 +829,25 @@
 
     function renderQuestsTab() {
       const content = document.getElementById('guide-content');
-      const search  = document.getElementById('guide-search').value.toLowerCase();
+      const search  = document.getElementById('guide-search').value.toLowerCase().trim();
       const f       = guideState.questFilter;
 
-      const matched = guideState.quests.filter(q =>
-        q.name.toLowerCase().includes(search) ||
-        (q.line     || '').toLowerCase().includes(search) ||
-        (q.monsters || '').toLowerCase().includes(search) ||
-        (q.items    || '').toLowerCase().includes(search) ||
-        (q.rewards  || '').toLowerCase().includes(search) ||
-        (q.notes    || '').toLowerCase().includes(search) ||
-        (q.rec      || '').toLowerCase().includes(search) ||
-        ('lv.' + q.lv).includes(search)
-      );
+      const matched = guideState.quests.filter(q => {
+        if (search.startsWith('ql:')) {
+          const lineQuery = search.slice(3).trim();
+          return (q.line || '').toLowerCase().includes(lineQuery);
+        }
+
+        return (
+          q.name.toLowerCase().includes(search) ||
+          (q.line     || '').toLowerCase().includes(search) ||
+          (q.monsters || '').toLowerCase().includes(search) ||
+          (q.items    || '').toLowerCase().includes(search) ||
+          (q.rewards  || '').toLowerCase().includes(search) ||
+          (q.rec      || '').toLowerCase().includes(search) ||
+          ('lv.' + q.lv).toLowerCase().includes(search)
+        );
+      });
 
       const filtered = matched.filter(q => {
         const qId = `${q.lv}-${q.line}-${q.name}`;
@@ -764,7 +883,7 @@
         const currentStatus = isDone ? 'done' : (isSkipped ? 'skipped' : 'open');
 
         html += `<tr class="quest-row${rowClass}">
-          <td class="col-done">
+          <td class="col-done" style="display:flex; align-items:center; justify-content:center;">
             <div class="quest-status-group">
               <input type="checkbox" ${isDone ? 'checked' : ''} onchange="setQuestStatus('${qIdSafe}', this.checked ? 'done' : 'open')" id="done-${qIdSafe}" style="margin:0; cursor:pointer; width:15px; height:15px;">
               <label for="done-${qIdSafe}" class="quest-status-label" style="color:#4a4">✓</label>
@@ -978,11 +1097,32 @@
   </div>
 
   <div id="guide-overlay">
+  <div id="promptOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; -webkit-app-region:no-drag;">
+    <div style="background:#17172f; border:1px solid #3a3a6a; border-radius:6px; padding:16px; width:300px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+      <form id="promptForm" onsubmit="event.preventDefault();">
+        <label id="promptLabel" style="display:block; margin-bottom:8px; color:#d0d0e8; font-size:12px;"></label>
+        <input type="text" id="promptInput" style="width:100%; padding:6px; background:#0c0c1a; border:1px solid #2a2a4a; color:#fff; border-radius:3px; margin-bottom:14px; font-size:12px;" />
+        <div style="display:flex; justify-content:flex-end; gap:6px;">
+          <button type="button" id="promptCancel" style="background:#2a2a4a; border:1px solid #4a4a7a; color:#aaa;">Annuleren</button>
+          <button type="submit" id="promptSubmit" style="background:#2a4a8a; border:1px solid #5a8ad8; color:#fff;">OK</button>
+        </div>
+      </form>
+    </div>
+  </div>
     <button class="guide-close" onclick="closeGuide()">✕ Close</button>
     <h2>Madrigal Guide</h2>
-    <div style="display:flex; gap:6px; margin-bottom:8px;">
-      <button onclick="exportProgress()" style="padding:3px 10px; border:1px solid #3a3a6a; background:#1e1e3a; color:#aaa; border-radius:3px; cursor:pointer; font-size:11px;">📤 Export Progress</button>
-      <button onclick="importProgress()" style="padding:3px 10px; border:1px solid #3a3a6a; background:#1e1e3a; color:#aaa; border-radius:3px; cursor:pointer; font-size:11px;">📥 Import Progress</button>
+    <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span id="profile-name-label" style="font-size:11px; color:#88aaff;">Profile</span>
+        <select id="profile-select" onchange="switchProfile(this.value)" style="background:#0c0c1a; color:#eee; border:1px solid #2a2a4a; padding:3px 6px; border-radius:3px; font-size:11px;"></select>
+        <button onclick="createProfile()" style="padding:3px 10px; border:1px solid #3a3a6a; background:#1e1e3a; color:#aaa; border-radius:3px; cursor:pointer; font-size:11px;">＋ New</button>
+        <button onclick="renameProfile()" style="padding:3px 10px; border:1px solid #3a3a6a; background:#1e1e3a; color:#aaa; border-radius:3px; cursor:pointer; font-size:11px;">✎ Rename</button>
+        <button onclick="deleteProfile()" style="padding:3px 10px; border:1px solid #3a3a6a; background:#1e1e3a; color:#aaa; border-radius:3px; cursor:pointer; font-size:11px;">🗑 Delete</button>
+      </div>
+      <div style="display:flex; gap:6px; margin-left:auto;">
+        <button onclick="exportProgress()" style="padding:3px 10px; border:1px solid #3a3a6a; background:#1e1e3a; color:#aaa; border-radius:3px; cursor:pointer; font-size:11px;">📤 Export Progress</button>
+        <button onclick="importProgress()" style="padding:3px 10px; border:1px solid #3a3a6a; background:#1e1e3a; color:#aaa; border-radius:3px; cursor:pointer; font-size:11px;">📥 Import Progress</button>
+      </div>
     </div>
     <div class="guide-nav">
       <div id="tab-quests"      class="guide-tab active" onclick="switchGuideTab('quests')">Quests</div>

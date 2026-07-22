@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.66.0 (2026-07-22)
+
+### Features
+- **Quest Profiles:** Introduced multi-character support for tracking quest progress individually across different profiles.
+- **Consistent UI Layout:** Aligned the done and skip buttons to a fixed vertical position across all quests for faster, uninterrupted navigation.
+- **Advanced Quest Filtering:** Enhanced the search bar to automatically filter quest lines when clicked, alongside support for the custom `ql:name` syntax.
+- **Expanded Quest Database:** Added missing quests to the guide, including "New Hero", "Hero Grade (2-4)", and "Master Grade (2-6)".
+
 ## v1.65.0 (2026-06-11)
 
 ### Features
