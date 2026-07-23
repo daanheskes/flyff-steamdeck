@@ -194,14 +194,14 @@
     .monster-element {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      width: 22px;
-      height: 22px;
-      padding: 0;
+      gap: 4px;
+      width: auto;
+      padding: 2px 6px;
       border: 1px solid #3a3a5a;
       border-radius: 3px;
       background: #17172f;
       color: #d0d0e8;
+      font-size: 11px;
     }
     .monster-element-icon {
       width: 14px;
@@ -247,6 +247,8 @@
     .quest-row.done .col-name { text-decoration: line-through; color: #888; }
     .quest-row.skipped { opacity: 0.4; }
     .quest-row.skipped .col-name { text-decoration: line-through; color: #666; font-style: italic; }
+
+    .quest-row .col-line:hover { color: #aaccff; text-decoration: underline; cursor: pointer; }
 
     /* Quest filter bar */
     #quest-filter-bar { display: flex; gap: 6px; align-items: center; }
@@ -340,9 +342,6 @@
 
     <!-- Resolution indicator -->
     <span id="res-label" class="label no-drag" style="color:#333; font-size:10px;" title="Game view resolution"></span>
-
-    <!-- Gamepad status indicator -->
-    <span id="gp-status" class="label no-drag" title="Gamepad Status">🎮 <span id="gp-label">–</span></span>
 
     <!-- Close button -->
     <button id="btn-close" onclick="window.flyff.quitApp()" title="Quit">✕</button>
@@ -845,8 +844,25 @@
           (q.items    || '').toLowerCase().includes(search) ||
           (q.rewards  || '').toLowerCase().includes(search) ||
           (q.rec      || '').toLowerCase().includes(search) ||
-          ('lv.' + q.lv).toLowerCase().includes(search)
+          (() => {
+            const cleanSearch = search.trim();
+            const match = cleanSearch.match(/^lv\.?\s*([><]=?)\s*(\d+)$/i);
+            if (match) {
+              const operator = match[1];
+              const targetLv = parseInt(match[2], 10);
+              const itemLv = Number(q.lv) || 0;
+              
+              if (operator === '>' || operator === '>=') return itemLv >= targetLv;
+              if (operator === '<' || operator === '<=') return itemLv <= targetLv;
+            }
+            return ('lv.' + q.lv).toLowerCase().includes(search);
+          })()
         );
+      }).sort((a, b) => {
+        if (guideState.activeTab === 'quests' && (f === 'done' || f === 'skipped')) {
+          return b.lv - a.lv;
+        }
+        return a.lv - b.lv;
       });
 
       const filtered = matched.filter(q => {
@@ -882,6 +898,8 @@
         const rowClass = isDone ? ' done' : (isSkipped ? ' skipped' : '');
         const currentStatus = isDone ? 'done' : (isSkipped ? 'skipped' : 'open');
 
+        const lineSafe = q.line.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
         html += `<tr class="quest-row${rowClass}">
           <td class="col-done" style="display:flex; align-items:center; justify-content:center;">
             <div class="quest-status-group">
@@ -891,8 +909,10 @@
               <label for="skip-${qIdSafe}" class="quest-status-label" style="color:#a44">⊗</label>
             </div>
           </td>
-          <td class="col-lv">${q.lv}</td>
-          <td class="col-line">${q.line || ''}</td>
+          <td class="col-lv">
+            <div style="min-width:fit-content">${q.lv}</div>
+          </td>
+          <td class="col-line" onclick="filterByQuestline('${lineSafe}')">${q.line || ''}</td>
           <td class="col-name${q.url ? ' link' : ''}"${q.url ? ` onclick="window.flyff.openQuestUrl('${q.url.replace(/'/g, "\\'")}')"` : ''}>${q.name}</td>
           <td class="col-rec ${recClass}">${q.rec || ''}</td>
           <td class="col-exp">${q.exp || '-'}${q.exp2 ? `<br><small style="color:#aaa">${q.exp2}</small>` : ''}</td>
@@ -1040,7 +1060,12 @@
       };
       const renderElementBadge = (elementName) => {
         const key = normalizeElementKey(elementName);
-        return `<span class="monster-element ${key}" title="${formatElement(key)}"><img class="monster-element-icon" src="${elementAssets[key] || elementAssets.none}" alt="${formatElement(key)}"></span>`;
+        const formattedName = formatElement(key);
+        // Icon + tekst toevoegen binnen de badge
+        return `<span class="monster-element ${key}" title="${formattedName}">
+                  <img class="monster-element-icon" src="${elementAssets[key] || elementAssets.none}" alt="${formattedName}">
+                  <span class="monster-element-text">${formattedName}</span>
+                </span>`;
       };
       const renderArrow = (kind, label) => `<span class="monster-arrow ${kind}" title="${label}"><img src="${arrowAssets[kind]}" alt="${label}"></span>`;
       const renderMonsterIcon = (icon, name) => {
@@ -1059,7 +1084,19 @@
         (m.area || '').toLowerCase().includes(search) ||
         getMatchup(m).weakTo.toLowerCase().includes(search) ||
         getMatchup(m).strongAgainst.toLowerCase().includes(search) ||
-        ('lv.' + m.lv).includes(search)
+        (() => {
+          const cleanSearch = search.trim();
+          const match = cleanSearch.match(/^lv\.?\s*([><]=?)\s*(\d+)$/i);
+          if (match) {
+            const operator = match[1];
+            const targetLv = parseInt(match[2], 10);
+            const itemLv = Number(m.lv) || 0;
+            
+            if (operator === '>' || operator === '>=') return itemLv >= targetLv;
+            if (operator === '<' || operator === '<=') return itemLv <= targetLv;
+          }
+          return ('lv.' + m.lv).includes(search);
+        })()
       );
 
       let html = `<div style="font-size:11px;color:#555;margin-bottom:6px">${filtered.length} monsters</div>`;
@@ -1103,7 +1140,7 @@
         <label id="promptLabel" style="display:block; margin-bottom:8px; color:#d0d0e8; font-size:12px;"></label>
         <input type="text" id="promptInput" style="width:100%; padding:6px; background:#0c0c1a; border:1px solid #2a2a4a; color:#fff; border-radius:3px; margin-bottom:14px; font-size:12px;" />
         <div style="display:flex; justify-content:flex-end; gap:6px;">
-          <button type="button" id="promptCancel" style="background:#2a2a4a; border:1px solid #4a4a7a; color:#aaa;">Annuleren</button>
+          <button type="button" id="promptCancel" style="background:#2a2a4a; border:1px solid #4a4a7a; color:#aaa;">Cancel</button>
           <button type="submit" id="promptSubmit" style="background:#2a4a8a; border:1px solid #5a8ad8; color:#fff;">OK</button>
         </div>
       </form>
@@ -1141,7 +1178,7 @@
           style="width:70px; background:#0c0c1a; border:1px solid #2a2a4a; color:#eee; padding:3px 6px; border-radius:3px; font-size:11px;"
           oninput="setDailyLevel(this.value)">
       </div>
-      <input type="text" id="guide-search" class="guide-search" placeholder="Search (e.g. 'Lv.20', questline name, monster...)..." oninput="filterGuide()">
+      <input type="search" id="guide-search" class="guide-search" placeholder="Search (e.g. 'Lv.20', questline name, monster...)..." oninput="filterGuide()">
     </div>
     <div id="guide-content"></div>
   </div>

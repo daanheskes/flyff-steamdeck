@@ -89,9 +89,6 @@ function saveConfig(filename, data) {
 
 function loadMonsterFallback() {
   try {
-    return JSON.parse(fs.readFileSync(userConfigPath('monster-cache.json'), 'utf8')).map(mapMonsterForGuide);
-  } catch {}
-  try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, '../config/monsters.json'), 'utf8')).map(mapMonsterForGuide);
   } catch {}
   return [];
@@ -1062,25 +1059,43 @@ function setupIPC() {
   });
 
   ipcMain.handle('get-monsters', async () => {
-    try {
-      const idsResponse = await fetch(FLYFF_MONSTER_API_URL);
-      if (!idsResponse.ok) throw new Error(`monster id fetch failed: ${idsResponse.status}`);
-      const ids = await idsResponse.json();
+    // Stop fetching the FlyFF API.
+    // Instead, add the correct file directly to the app (378 kB) and load the fallback.
+    // This way we don't have to fetch it each time for all users, and the "Guide" loads instantaneously.
 
-      const monsters = [];
-      for (let i = 0; i < ids.length; i += 100) {
-        const response = await fetch(`${FLYFF_MONSTER_API_URL}/${ids.slice(i, i + 100).join(',')}`);
-        if (!response.ok) throw new Error(`monster batch fetch failed: ${response.status}`);
-        const batch = await response.json();
-        monsters.push(...batch.map(mapMonsterForGuide));
-      }
+    // Filter monsters to remove some irrelevant ones.
+    const monsters = loadMonsterFallback().filter(m => {
+      if (!m.name || m.name === 'null') return false;
+      if (m.name.startsWith('[Event]')) return false;
+      if (m.rank === 'material' || m.name.toLowerCase().includes('catcher')) return false;
+      if (!m.weakTo || m.weakTo.trim() === '') return false;
+      return true;
+    });
+    return monsters;
 
-      monsters.sort((a, b) => (a.lv - b.lv) || a.name.localeCompare(b.name));
-      saveConfig('monster-cache.json', monsters);
-      return monsters;
-    } catch {
-      return loadMonsterFallback();
-    }
+    /*
+    // Keep this Fetch, because if there is an update we could manually update it
+    // When developing on Windows, the data is in %AppData%\aimwald-sdf\monster-cache.json after running the devmode.
+    */
+
+    // try {
+    //   const idsResponse = await fetch(FLYFF_MONSTER_API_URL);
+    //   if (!idsResponse.ok) throw new Error(`monster id fetch failed: ${idsResponse.status}`);
+    //   const ids = await idsResponse.json();
+
+    //   let monsters = [];
+    //   for (let i = 0; i < ids.length; i += 100) {
+    //     const response = await fetch(`${FLYFF_MONSTER_API_URL}/${ids.slice(i, i + 100).join(',')}`);
+    //     if (!response.ok) throw new Error(`monster batch fetch failed: ${response.status}`);
+    //     const batch = await response.json();
+    //     monsters.push(...batch.map(mapMonsterForGuide));
+    //   }
+
+    //   saveConfig('monster-cache.json', monsters);
+    //   return monsters;
+    // } catch {
+    //   return loadMonsterFallback();
+    // }
   });
 
   ipcMain.handle('get-quests', () => {

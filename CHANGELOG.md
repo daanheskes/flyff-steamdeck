@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.67.0 (2026-07-23)
+
+### Features
+- **Clear search:** Search input can instantly be cleared with the X button on the right side of the search after typing something.
+- **Questlines clickable:** Questlines can be clicked to instantly filter based on questline without going to the quest tab.
+- **Quest Sorting:** Completed quests are now sorted descendingly in the list, so you see the highest level first.
+- **Monster data stored locally:** Guide now loads instantly due to monster data being stored locally, instead of fetching the FlyFF Universe API all the time.
+- **Level Search:** You can now search on Lv>50 to only find Quests/Monsters from level 50 and above, or Lv<100 to find Quests from level 100 and under
+
 ## v1.66.0 (2026-07-22)
 
 ### Features
