@@ -127,8 +127,8 @@ function createMainWindow() {
   const saved = store.get('windowBounds', { width: DEFAULT_W, height: DEFAULT_H });
 
   mainWindow = new BrowserWindow({
-    width:  saved.width  || DEFAULT_W,
-    height: saved.height || DEFAULT_H,
+    width:  Math.max(saved.width  || DEFAULT_W, DEFAULT_W),
+    height: Math.max(saved.height || DEFAULT_H, DEFAULT_H),
     frame: false,                   // No OS frame; toolbar is in HTML
     backgroundColor: '#1a1a2e',
     icon: path.join(__dirname, '../build/icon.png'),
@@ -437,7 +437,7 @@ function openSettings() {
   settingsWindow = new BrowserWindow({
     width: 680,
     height: 740,
-    title: 'AimWald-SDF Settings',
+    title: 'Flyff-SteamDeck Settings',
     backgroundColor: '#1a1a2e',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -486,7 +486,7 @@ function openQuestUrl(url) {
   questWindow = new BrowserWindow({
     width: 1000,
     height: 750,
-    title: 'AimWald-SDF Quest Details',
+    title: 'Flyff-SteamDeck Quest Details',
     backgroundColor: '#1a1a2e',
     autoHideMenuBar: true,
     webPreferences: {
@@ -1079,7 +1079,7 @@ function setupIPC() {
 
     /*
     // Keep this Fetch, because if there is an update we could manually update it
-    // When developing on Windows, the data is in %AppData%\aimwald-sdf\monster-cache.json after running the devmode.
+    // When developing on Windows, the data is in %AppData%\flyff-steamdeck\monster-cache.json after running the devmode.
     */
 
     // try {

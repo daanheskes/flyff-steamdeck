@@ -1,17 +1,68 @@
-# AimWald-SDF (SteamDeckFlyff)
+# Flyff-SteamDeck
 
-<p align="center">
-  <img src="build/readme-banner.png" alt="AimWald-SDF Banner" width="100%">
+<p>
+  <strong>Electron-based SteamDeck wrapper for <a href="https://universe.flyff.com">Flyff Universe</a></strong><br>
+  Multiboxing • Automation • Gamepad Support • Quest progress tracking/guide
 </p>
 
-<p align="center">
-  <strong>Desktop wrapper for <a href="https://universe.flyff.com">Flyff Universe</a></strong><br>
-  Multiboxing • Automation • Gamepad Support • Quest Guide
-</p>
+---
 
-<p align="center">
-  Built and optimized for the <strong>Valve Steam Deck</strong> (SteamOS) — also runs on any Linux desktop
-</p>
+## 💡 Why This Exists
+
+Playing Flyff Universe in a web browser on the Steam Deck is incredibly uncomfortable. The game requires a lot of keyboard keys for normal gameplay — buffs, heals, skill rotations, multi-boxing a RM — which is painful to manage with the virtual keyboard and without proper gamepad mapping.
+
+Flyff-SteamDeck makes it so Flyff Universe can be played in the Gaming mode, so that you can map all the gamepad controls however you prefer it through the Steam controller layouts.
+
+### ⚠️ Use at Your Own Risk
+
+**You can use this wrapper in two ways:**
+
+1. **Safe Mode (Gamepad + Multibox only)** — Use only the gamepad controls, quest guide, and multiboxing features. These are quality-of-life improvements for comfortable Steam Deck gameplay with no automation.
+
+2. **Automation Mode (Higher Risk)** — Enable auto-heal, buff timers, macros, or auto-targeting. **These features may violate Flyff Universe's Terms of Service** and could result in account suspension or ban. Ban risk is unknown and varies by feature.
+
+**Automation Feature Risk Assessment:**
+- **Auto-Heal/MP/FP** — Medium risk (detectable input patterns)
+- **Buff/Heal Timers** — Medium risk (detectable timing patterns, includes ±10% randomization)
+- **Macros** — Medium risk (rapid key sequences)
+- **Auto-Targeting (Spiral)** — ⚠️ **Experimental/High risk** — unreliable, not recommended for regular use
+
+**If you only want comfortable SteamDeck controls, simply don't enable any automation features.** The core wrapper, multiboxing, and quest guide are safe quality-of-life improvements.
+
+---
+
+## 📥 Steam Deck Installation
+
+1. Download the latest `Flyff-SteamDeck.AppImage` from the GitHub [Releases](https://github.com/daanheskes/flyff-steamdeck/releases).
+2. Make the `Flyff-SteamDeck.AppImage` file executable: Choose one of the methods below:
+  a. **GUI:** Right-click the file $\rightarrow$ **Properties** $\rightarrow$ **Permissions** tab $\rightarrow$ Check **Allow executing file as program**.
+  b. **Terminal:** Run `chmod +x Flyff-SteamDeck.AppImage`.
+3. Move the file into the Home folder: `/home/deck/`.
+4. Add `/home/deck/Flyff-SteamDeck.sh` as a **Non-Steam Game**.
+5. Return to the Gaming Mode in order to launch it.
+
+6. (Optional) You can set the Flyff Universe artwork images through the use of [Decky](https://decky.xyz/), by installing the Decky plugin `SteamGridDB`. Once it's installed, navigate to game (Flyff-SteamDeck) and press the Options (`☰`) button → Select **Change Image...**
+You might have to press the Filter-button to set the game to Flyff Universe in order to see the Flyff Universe images. Select the images you prefer and you're done!
+
+## Updating to new Releases
+
+1. Download the latest `Flyff-SteamDeck.AppImage` from the GitHub [Releases](https://github.com/daanheskes/flyff-steamdeck/releases).
+2. Overwrite the old `Flyff-SteamDeck.AppImage` file with the new file.
+3. Make the file executable: Choose one of the methods below:
+  * **Terminal:** Run `chmod +x Flyff-SteamDeck.AppImage`
+  * **GUI:** Right-click the file $\rightarrow$ **Properties** $\rightarrow$ **Permissions** tab $\rightarrow$ Check **Allow executing file as program**
+4. Config data is stored elsewhere, your configurator and Steam controller settings will not be lost by updating.
+*Tip: Config data is stored (in `/deck/home/.config/flyff-steamdeck` which is hidden by default, Check "Show Hidden Files" in the Dolphin file explorer if you want to see it)*
+
+### Build from Source (for contributors)
+
+```bash
+git clone https://github.com/daanheskes/flyff-steamdeck.git
+cd flyff-steamdeck
+npm install
+npm start              # dev mode
+npm run build          # builds dist/Flyff-SteamDeck.AppImage
+```
 
 ---
 
@@ -22,7 +73,7 @@
   <img src="screenshots/gameplay-dual-account.png" alt="Dual Account Split-Screen" width="90%">
 </p>
 
-### Quest Guide - 492 Quests with Progress Tracking
+### Quest Guide - 501 Quests with Progress Tracking
 <p align="center">
   <img src="screenshots/quest-guide-quests.png" alt="Quest Guide - Quests Tab" width="80%">
 </p>
@@ -44,147 +95,14 @@
 
 ---
 
-## 💡 Why This Exists
-
-Playing Flyff Universe in a web browser on the Steam Deck is incredibly uncomfortable. The game requires a lot of keyboard keys for normal gameplay — buffs, heals, skill rotations — which is painful to manage with the virtual keyboard and without proper gamepad mapping.
-
-I'm not a programmer, but with modern AI assistance (Claude), building something like this became possible. This wrapper solves the core problems:
-- **Gamepad control** that actually works (WASD movement, camera on right stick, mapped skill keys)
-- **Multiboxing** for running a second character (or player shop) in the background
-- **Automation** for repetitive actions (buff rotations, heal macros) so you can focus on gameplay instead of spamming keys
-
-What started as a personal Steam Deck quality-of-life project turned into a full-featured wrapper with quest guides, auto-heal, and even a virtual keyboard — all built iteratively with AI.
-
-### ⚠️ Use at Your Own Risk
-
-**You can use this wrapper in two ways:**
-
-1. **Safe Mode (Gamepad + Multibox only)** — Use only the gamepad controls, quest guide, and multiboxing features. These are quality-of-life improvements for comfortable Steam Deck gameplay with no automation.
-
-2. **Automation Mode (Higher Risk)** — Enable auto-heal, buff timers, macros, or auto-targeting. **These features may violate Flyff Universe's Terms of Service** and could result in account suspension or ban. Ban risk is unknown and varies by feature.
-
-**Automation Feature Risk Assessment:**
-- **Auto-Heal/MP/FP** — Medium risk (detectable input patterns)
-- **Buff/Heal Timers** — Medium risk (detectable timing patterns, includes ±10% randomization)
-- **Macros** — Medium risk (rapid key sequences)
-- **Auto-Targeting (Spiral)** — ⚠️ **Experimental/High risk** — unreliable, not recommended for regular use
-
-**If you only want comfortable Steam Deck controls, simply don't enable any automation features.** The core gamepad mapping, multiboxing, and quest guide are safe quality-of-life improvements.
-
----
-
 ## ✨ Features at a Glance
 
 - **Up to 4 accounts simultaneously** — Account 1 & 2 always loaded, Account 3 & 4 optional (e.g. player shop in background)
-- **Auto-Heal/MP/FP** — Pixel-based or bar-scan monitoring with multiple thresholds per bar
+- **Auto-Heal/MP/FP** — Bar-scan or pixel-based monitoring with multiple thresholds per bar
 - **Automation Engine** — Timed buff/heal rotations that run even on background accounts
 - **Macro Buttons** — Toolbar buttons for full buff sequences (configurable key lists)
 - **Follow + Board Hotkey** — Press one button to send Z + Alt+6 (for follow + mount) to any account
-- **Gamepad Control** — Full Steam Deck layout with WASD movement, camera control (right stick = arrow keys), and auto-targeting
-- **Madrigal Guide** — 492 quests, 36 questlines, daily quests, with progress tracking and export/import
-- **Quest Progress Export/Import** — Backup your quest data as JSON; survives AppImage updates
-
----
-
-## 📥 Installation
-
-### Steam Deck (One-Command Install)
-
-Open Konsole (Desktop Mode) and run:
-```bash
-curl -L https://raw.githubusercontent.com/AimWald/aimwald-sdf/main/install.sh | sh
-```
-
-This will:
-- Download the latest AppImage
-- Install to your home directory (`$HOME`)
-- Create launch script with proper environment variables
-- Clean up old AppImage extracts
-
-Then add `$HOME/launch-sdf.sh` as a **Non-Steam Game**:
-1. Open Steam (Desktop Mode)
-2. Games → Add a Non-Steam Game → Browse
-3. Select `$HOME/launch-sdf.sh` (typically `/home/deck/launch-sdf.sh`)
-4. Add to Steam
-
-**⚠️ CRITICAL: Enable Touchscreen Support (Steam Deck)**
-
-After adding to Steam, you **MUST** configure the Steam Controller settings for touchscreen to work properly:
-
-1. In Steam (Desktop Mode), right-click **AimWald-SDF** → **Manage** → **Controller Layout**
-2. Navigate to **Action Sets** tab
-3. Find **Always On Commands** (under System)
-4. Enable **Touchscreen Native Support**
-5. Save and exit
-
-**Without this setting, the Steam Deck touchscreen will not work in the app!**
-
-**⚠️ CRITICAL: In-Game Keybind Setup**
-
-You **MUST** configure this keybind in Flyff Universe game settings for the B button to work:
-
-1. Launch the game
-2. Open **Settings** (Esc → Settings)
-3. Go to **Keybinds**
-4. Find **Clear Target**
-5. Set it to **`.`** (period/dot key)
-6. Save settings
-
-**Without this keybind, the B button (Clear Target) will not work!**
-
-**Install Custom Artwork (🚧 Work in Progress)**
-
-> ⚠️ **Note:** Custom Steam artwork (Grid, Hero, Logo) is currently being designed and is not yet available. This section will be updated when artwork is ready.
-
-<!-- Future installation instructions will go here -->
-
-### Manual Installation (Linux)
-
-1. Download the latest `AimWald-SDF.AppImage` from [Releases](https://github.com/AimWald/aimwald-sdf/releases)
-2. Make it executable: `chmod +x AimWald-SDF.AppImage`
-3. Run: `./AimWald-SDF.AppImage`
-
-### Manual Steam Deck Setup (Advanced)
-
-1. Copy `AimWald-SDF.AppImage` to your home directory (`$HOME`, typically `/home/deck/`)
-2. Create a launch script `$HOME/launch-sdf.sh`:
-
-```bash
-#!/bin/bash
-# Clean up old extracted AppImage directories to free /tmp space
-rm -rf /tmp/appimage_extracted_*
-
-# Gaming Mode display configuration
-export DISPLAY=${DISPLAY:-:0}
-export WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-gamescope-0}
-export GAMESCOPE_WAYLAND_DISPLAY=${GAMESCOPE_WAYLAND_DISPLAY:-gamescope-0}
-export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
-
-# Use X11 for Electron/Ozone (more stable than Wayland in Gaming Mode)
-export ELECTRON_OZONE_PLATFORM_HINT=x11
-
-# Disable input method modules that can cause crashes
-export XMODIFIERS=""
-export GTK_IM_MODULE=""
-export QT_IM_MODULE=""
-
-# Execute AppImage with proper quoting and flags
-"$HOME/AimWald-SDF.AppImage" --appimage-extract-and-run --disable-gpu-sandbox --no-sandbox
-```
-
-3. Make it executable: `chmod +x $HOME/launch-sdf.sh`
-4. Add `$HOME/launch-sdf.sh` as a **Non-Steam Game** in Steam
-5. Launch from Game Mode
-
-### Build from Source
-
-```bash
-git clone https://github.com/AimWald/aimwald-sdf.git
-cd aimwald-sdf
-npm install
-npm start              # dev mode
-npm run build          # builds dist/AimWald-SDF.AppImage
-```
+- **Madrigal Guide** — 501 quests, 36 questlines, 939 monsters, daily quests, with quest progress tracking
 
 ---
 
@@ -303,91 +221,20 @@ No configuration needed — randomization is built-in and automatic.
 
 ---
 
-## 🎮 Gamepad Support (Steam Deck)
+## 🎮 Controller Configuration: Two Layers Explained
 
-**⚠️ Important Setup Required:**
-1. **Touchscreen:** Enable **Touchscreen Native Support** in Steam Controller settings
-2. **Clear Target (B button):** Set **Clear Target** keybind to **`.`** in Flyff Universe game settings
+Change the controls in the Steam Deck controller configurator. The hotkeys below might be useful for mapping the buttons.
 
-See the [Installation section](#-installation) for detailed setup instructions.
+#### Hotkeys
 
-### Default Button Layout
+| Key | Action | Configurable |
+|-----|--------|:---:|
+| **F9** | Switch active account | ✅ |
+| **F10** | Toggle automation on active account | ✅ |
+| **`,`** | Follow + Board (Z + Alt+6) on active account | ✅ |
+| **F11** | Toggle fullscreen | ❌ |
 
-| Button | Action |
-|--------|--------|
-| A (0) | Left click (attack / select) |
-| B (1) | `.` — Clear target |
-| X (2) | Key `3` |
-| Y (3) | Space (Jump) |
-| L1 (4) | Key `1` (Heal) |
-| R1 (5) | Key `2` (Buff) |
-| L2 (6) | Right click hold (for camera drag — not needed with right-stick arrow keys) |
-| R2 (7) | Key `4` |
-| Select (8) | M (Map) |
-| Start (9) | I (Inventory) |
-| D-Pad ↑ (12) | Scroll in (zoom) |
-| D-Pad ↓ (13) | Scroll out (zoom) |
-| D-Pad → (15) | Tab (switch skill bar) |
-
-### Sticks
-- **Left stick:** WASD movement (hysteresis: press at 0.40, release at 0.20 to prevent jitter)
-- **Right stick:** Arrow keys (camera control) — mapped to ↑↓←→ for smooth in-game camera rotation
-
-No L2-hold required for camera anymore.
-
-### Auto-Targeting (⚠️ Experimental)
-
-Assign `__TARGET` to any button in **Settings → Controller** inside the app. When pressed, a spiral cursor sweeps from screen center and clicks the first hovered target. Configure search radius in **Settings → Controller → Auto-Target**.
-
-**⚠️ Warning:** This feature is **experimental and unreliable**. It may miss targets, click wrong locations, or behave unpredictably. **Ban risk is unknown.** Use at your own risk. Not recommended for regular gameplay.
-
----
-
-## Controller Configuration: Two Layers Explained
-
-There are **two places** to configure controller buttons, and understanding the difference is important:
-
-### 1️⃣ In-App Settings (Settings → Controller)
-
-Configure the **main gamepad buttons** (A/B/X/Y, L1/R1/L2/R2, D-Pad, Start/Back) here:
-- All 20 buttons (0–19) are remappable
-- Change what keyboard keys they send to the game
-- Configure auto-targeting (`__TARGET` special function)
-- These settings apply to the physical Steam Deck buttons
-
-**Example:** Change X button from `3` to `5`, or map D-Pad ↑ to `P` for Party Window.
-
-### 2️⃣ Steam Controller Layout (Steam → Manage → Controller Layout)
-
-Configure **extra inputs** that the app doesn't handle natively:
-- **Back buttons** (L4/R4/L5/R5) — not accessible in-app, must configure in Steam
-- **Right trackpad** — set to Mouse mode + Left Click for precise cursor control
-- **Gyro** — if you want motion controls
-- **Touchscreen Native Support** ⚠️ **REQUIRED** — enable in Action Sets → Always On Commands
-
-**Recommended Steam-only mappings:**
-- **L4**: `F9` (Account Switch) — quick multibox switching
-- **R4**: Automation toggle hotkey or macro button
-- **Right Trackpad**: Mouse mode + Left Click action
-
-### ⚡ Quick Decision Guide
-
-| What do you want to change? | Where to configure it? |
-|------------------------------|------------------------|
-| A/B/X/Y buttons, D-Pad, L1/R1/L2/R2 | **In-App** (Settings → Controller) |
-| Back buttons (L4/R4/L5/R5) | **Steam Controller Layout** |
-| Right trackpad behavior | **Steam Controller Layout** |
-| Touchscreen support | **Steam Controller Layout** (Action Sets) |
-| Auto-targeting | **In-App** (Settings → Controller) |
-
-### 💡 Recommended Workflow
-
-1. **Start with in-app defaults** — they're optimized for Flyff gameplay
-2. **Add Steam-only features** — back buttons for F9 (account switch), right trackpad as mouse
-3. **Enable touchscreen** in Steam Action Sets (CRITICAL!)
-4. **Optionally override D-Pad** in Steam if you prefer UI shortcuts (P/H/I) over zoom
-
-This two-layer system gives you maximum flexibility: the app handles core combat controls, Steam handles extra hardware features.
+**Important:** Wrapper hotkeys (F9, F10, comma) are captured globally and **will not reach the game**. If you need F9/F10 in-game (Action Bar switching), change the wrapper hotkeys in **Settings → Hotkeys** to different keys.
 
 ---
 
@@ -396,7 +243,7 @@ This two-layer system gives you maximum flexibility: the app handles core combat
 Click **📖 Guide** in the toolbar to open the in-app overlay.
 
 ### Quests Tab
-- **492 quests** (Lv. 1–183) sourced from NaviKnight2765's spreadsheet
+- **501 quests** (Lv. 1–183) sourced from NaviKnight2765's spreadsheet
 - Columns: Level, Questline, Name, Recommendation, Exp, Difficulty, Items, Monsters, Inventory slots, Rewards, Notes
 - **Filter bar:** Open / Done / Skipped / All (default: Open)
 - **Status tracking:** Radio buttons per quest — Open (○), Done (✓), or Skipped (⊗)
@@ -443,21 +290,6 @@ Automation on the target account pauses during macro execution and resumes after
 
 ---
 
-## ⌨️ Hotkeys
-
-| Key | Action | Configurable |
-|-----|--------|:---:|
-| **F9** | Switch active account | ✅ |
-| **F10** | Toggle automation on active account | ✅ |
-| **`,`** | Follow + Board (Z + Alt+6) on active account | ✅ |
-| **F11** | Toggle fullscreen | ❌ |
-
-**Important:** Wrapper hotkeys (F9, F10, comma) are captured globally and **will not reach the game**. If you need F9/F10 in-game (Action Bar switching), change the wrapper hotkeys in **Settings → Hotkeys** to different keys.
-
-Change configurable hotkeys in **Settings → Hotkeys**.
-
----
-
 ## ⚙️ Settings Overview
 
 Open with **⚙ Settings** in the toolbar.
@@ -493,24 +325,26 @@ Use **Export Progress** in the Guide for an extra backup before updating.
 ## 🛠️ Development
 
 ```bash
-git clone https://github.com/AimWald/aimwald-sdf.git
-cd aimwald-sdf
+git clone https://github.com/daanheskes/flyff-steamdeck.git
+cd flyff-steamdeck
 npm install
 npm start              # dev mode (Electron + devtools)
-npm run build          # builds dist/AimWald-SDF.AppImage
+npm run build          # builds dist/Flyff-SteamDeck.AppImage
 ```
 
 Deploy to Steam Deck:
 ```bash
-scp dist/AimWald-SDF.AppImage deck@<deck-ip>:~/
+scp dist/Flyff-SteamDeck.AppImage deck@<deck-ip>:~/
 # Or run the installer again to update
 ```
 
 ---
 
-## 🙏 Credits
+## 🏆 Credits
 
-**Quest data** (492 quests, 36 questlines, difficulty ratings, recommendations, inventory slot tracking) sourced from the spreadsheet by **NaviKnight2765**:
+This project is a fork from the Github repository [AimWald-SDF](https://github.com/AimWald/aimwald-sdf). I'd like to thank AimWald for the initial project, as otherwise this project would not have existed either.
+
+**Quest data** (501 quests, 36 questlines, difficulty ratings, recommendations, inventory slot tracking) sourced from the spreadsheet by **NaviKnight2765**:
 - Reddit: [u/NaviKnight2765](https://www.reddit.com/user/NaviKnight2765/)
 - Original post: [I made a spreadsheet with detailed info about all quests and drops](https://www.reddit.com/r/FlyffUniverse/comments/1k0n6mo/i_made_a_spreadsheet_with_detailed_info_about_all/)
 
@@ -525,15 +359,16 @@ This project is an **independent, community-driven wrapper** for Flyff Universe 
 - **Flyff Universe** is a trademark of Gala Lab Corp.
 - This wrapper is provided **as-is** for educational and personal use.
 - **Use at your own risk.** The author is not responsible for any consequences of using this software, including account suspensions, bans, or violations of Flyff Universe's Terms of Service.
+- The automation was already added since this project was forked from the AimWald-SDF project, ultimately it will be removed from this fork as the main goal for this project is to make Flyff Universe playable (and enjoyable) on the SteamDeck. For now, it's kept due to simply not having the time to remove it.
 
 ### Risk Levels by Feature
 
 **Safe for casual use** (Quality-of-life only):
-- Gamepad controls (WASD, camera, button mapping)
 - Multiboxing (multiple accounts)
+- Monster list
 - Quest guide
 
-**Medium to High Risk** (May violate ToS):
+**Medium to High Risk** (violates ToS):
 - **Auto-Heal/MP/FP** — Automated input based on screen monitoring
 - **Automation timers** — Timed buff/heal rotations (includes randomization to reduce detection)
 - **Macros** — Rapid key sequences
@@ -556,12 +391,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🐛 Issues & Feedback
 
-Report bugs or request features at [github.com/AimWald/aimwald-sdf/issues](https://github.com/AimWald/aimwald-sdf/issues)
-
----
-
-## 💬 About the Name
-
-**AimWald-SDF** = **S**team**D**eck**F**lyff by AimWald
-
-The project started as a personal quality-of-life wrapper for playing Flyff Universe on the Steam Deck, where the web browser experience is uncomfortable and lacks proper gamepad support. With modern AI assistance (Claude), what began as a simple fix turned into a full-featured multiboxing wrapper with automation, quest guides, and more.
+Report bugs or request features at the [Issues](https://github.com/daanheskes/flyff-steamdeck/issues) page.

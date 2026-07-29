@@ -1,13 +1,13 @@
 {
-  "name": "aimwald-sdf",
-  "version": "1.67.1",
-  "description": "AimWald-SDF: Flyff Universe wrapper for Steam Deck – Multiboxing, Automation, Gamepad",
+  "name": "flyff-steamdeck",
+  "version": "1.68.0",
+  "description": "Flyff SteamDeck: Flyff Universe wrapper for Steam Deck – Multiboxing, Automation, Gamepad",
   "main": "src/main.js",
-  "author": "AimWald",
+  "author": "daanheskes",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AimWald/aimwald-sdf.git"
+    "url": "https://github.com/daanheskes/flyff-steamdeck.git"
   },
   "scripts": {
     "start": "electron . --disable-gpu-sandbox",
@@ -26,8 +26,8 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.aimwald.sdf",
-    "productName": "AimWald-SDF",
+    "appId": "flyff-steamdeck",
+    "productName": "Flyff-SteamDeck",
     "files": [
       "src/**/*",
       "config/**/*",
@@ -38,7 +38,7 @@
       "target": "AppImage",
       "category": "Game",
       "icon": "build/icon.png",
-      "artifactName": "AimWald-SDF.AppImage"
+      "artifactName": "Flyff-SteamDeck.AppImage"
     },
     "win": {
       "target": "nsis"
@@ -46,7 +46,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "AimWald-SDF-Setup.exe"
+      "artifactName": "Flyff-SteamDeck-Setup.exe"
     },
     "extraMetadata": {
       "main": "src/main.js"

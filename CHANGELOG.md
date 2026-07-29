@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.0 (2026-07-29)
+- **Project name changed:** Changed the name from AimWald-SDF (forked from this repo) to Flyff-SteamDeck.
+You will have to change the `/home/.config/` folder from `aimwald-sdf` to `flyff-steamdeck` in order not to lose your configuration.
+- **Minimum resolution:** The minimum window size is now 1280x800 (default SteamDeck resolution).
+
 ## v1.67.1 (2026-07-29)
 
 ### Features
