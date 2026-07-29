@@ -316,16 +316,14 @@
 
     <!-- Automation Account 1 -->
     <span class="label no-drag">Acc1:</span>
-    <button id="btn-start-account1" onclick="startAutomation('account1')" title="Start Automation Account 1 (F10)">▶</button>
-    <button id="btn-stop-account1"  onclick="stopAutomation('account1')"  title="Stop Automation Account 1">■</button>
+    <button style="width: 28px;" id="btn-automation-account1" onclick="toggleAutomation('account1')" title="Start Automation Account 1 (F10)"></button>
     <button onclick="window.flyff.followBoard('account1')" title="Follow + Board (Z + Alt+6) – Acc1" style="padding:0 6px;">⛵</button>
 
     <div class="sep"></div>
 
     <!-- Automation Account 2 -->
     <span class="label no-drag">Acc2:</span>
-    <button id="btn-start-account2" onclick="startAutomation('account2')" title="Start Automation Account 2">▶</button>
-    <button id="btn-stop-account2"  onclick="stopAutomation('account2')"  title="Stop Automation Account 2">■</button>
+    <button style="width: 28px;" id="btn-automation-account2" onclick="toggleAutomation('account2')" title="Start Automation Account 2">▶</button>
     <button onclick="window.flyff.followBoard('account2')" title="Follow + Board (Z + Alt+6) – Acc2" style="padding:0 6px;">⛵</button>
 
     <!-- Macro buttons (dynamic) -->
@@ -433,8 +431,14 @@
     }
 
     function applyRunningState(account, running) {
-      document.getElementById(`btn-start-${account}`).classList.toggle('running', running);
-      document.getElementById(`btn-stop-${account}` ).classList.toggle('running', running);
+      document.getElementById(`btn-automation-${account}`).classList.toggle('running', running);
+      if (running) {
+        document.getElementById(`btn-automation-${account}`).textContent = '■';
+        document.getElementById(`btn-automation-${account}`).title = `Stop Automation ${account === 'account1' ? 'Account 1' : 'Account 2'} (F10)`;
+      } else {
+        document.getElementById(`btn-automation-${account}`).textContent = '▶';
+        document.getElementById(`btn-automation-${account}`).title = `Start Automation ${account === 'account1' ? 'Account 1' : 'Account 2'} (F10)`;
+      }
     }
 
     // ── Button-Handler ────────────────────────────────────────────────────────
@@ -442,6 +446,14 @@
     function switchAccount(account) {
       window.flyff.switchAccount(account);
       applyAccountState(account);
+    }
+
+    function toggleAutomation(account) {
+      if (document.getElementById(`btn-automation-${account}`).classList.contains('running')) {
+        stopAutomation(account);
+      } else {
+        startAutomation(account);
+      }
     }
 
     function startAutomation(account) {
@@ -571,17 +583,6 @@
 
     // ── Changelog-Overlay ─────────────────────────────────────────────────────
 
-    function renderMarkdown(md) {
-      const el = document.createElement('div');
-      md.split('\n').forEach(line => {
-        if (line.startsWith('## '))      { const h = document.createElement('h2'); h.textContent = line.slice(3); el.appendChild(h); }
-        else if (line.startsWith('### ')) { const h = document.createElement('h3'); h.textContent = line.slice(4); el.appendChild(h); }
-        else if (line.startsWith('- '))  { const ul = el.lastChild?.tagName === 'UL' ? el.lastChild : el.appendChild(document.createElement('ul')); const li = document.createElement('li'); li.textContent = line.slice(2); ul.appendChild(li); }
-        // Skip blank lines and other lines
-      });
-      return el;
-    }
-
     async function openChangelog() {
       const overlay = document.getElementById('changelog-overlay');
       if (overlay.style.display === 'block') { closeChangelog(); return; }
@@ -590,8 +591,8 @@
 
       const content = document.getElementById('changelog-content');
       if (!content.hasChildNodes()) {
-        const md = await window.flyff.getChangelog();
-        content.appendChild(renderMarkdown(md));
+        const html = await window.flyff.getChangelog();
+        content.innerHTML = html; // Gebruik innerHTML omdat de backend al HTML terugstuurt
       }
       overlay.style.display = 'block';
       window.flyff.setGameViewVisibility(false);

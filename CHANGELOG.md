@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.67.1 (2026-07-29)
+
+### Features
+- **Markdown (Marked):** Added Marked to correctly render markdown in changelog.
+- **Automation toggle:** Reduce start/stop automation buttons into 1 toggle-button.
+
 ## v1.67.0 (2026-07-23)
 
 ### Features

@@ -3,6 +3,7 @@
 const { app, BrowserWindow, WebContentsView, globalShortcut, ipcMain, nativeImage } = require('electron');
 const path = require('path');
 const fs   = require('fs');
+const { marked } = require('marked');
 const automation = require('./automation.js');
 const {
   DEFAULT_HOTKEYS,
@@ -1054,8 +1055,11 @@ function setupIPC() {
 
   ipcMain.handle('get-changelog', () => {
     try {
-      return fs.readFileSync(path.join(__dirname, '../CHANGELOG.md'), 'utf8');
-    } catch { return ''; }
+        const markdown = fs.readFileSync(path.join(__dirname, '../CHANGELOG.md'), 'utf8');
+        return marked.parse(markdown);
+    } catch { 
+        return ''; 
+    }
   });
 
   ipcMain.handle('get-monsters', async () => {
