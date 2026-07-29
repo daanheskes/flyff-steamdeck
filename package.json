@@ -26,7 +26,7 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "flyff-steamdeck",
+    "appId": "com.github.daanheskes.flyff-steamdeck",
     "productName": "Flyff-SteamDeck",
     "files": [
       "src/**/*",
