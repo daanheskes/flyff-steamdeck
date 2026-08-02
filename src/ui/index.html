@@ -8,15 +8,14 @@
 
     html, body {
       width: 100%;
-      height: 30px;
+      height: 100vh;
       overflow: hidden;
       background: #12122a;
       color: #d0d0e8;
       font-family: system-ui, sans-serif;
       font-size: 11px;
       user-select: none;
-      /* The entire toolbar is draggable; buttons override that */
-      -webkit-app-region: drag;
+      position: relative;      
     }
 
     .toolbar {
@@ -25,6 +24,136 @@
       height: 30px;
       padding: 0 6px;
       gap: 3px;
+      background: #12122a;
+      position: relative;
+      z-index: 20;
+      -webkit-app-region: drag;
+    }
+
+    .toolbar-spacer {
+      flex: 1 1 auto;
+    }
+
+    .tools-toggle {
+      padding: 0 7px;
+      font-size: 11px;
+      color: #d0d0e8;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 30;
+    }
+
+    .tools-toggle.active {
+      background: #2a4a8a;
+      border-color: #5a8ad8;
+      color: #c8dcff;
+    }
+
+    .tools-sidebar {
+      position: fixed;
+      top: 30px;
+      right: -320px;
+      bottom: 0;
+      width: 280px;
+      max-width: 88vw;
+      display: flex;
+      background: #0f1021;
+      border-left: 1px solid #2a2a4a;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2147483647;
+      -webkit-app-region: no-drag;
+    }
+
+    .tools-sidebar.open {
+      right: 0;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .tools-sidebar__rail {
+      width: 25px;
+      padding: 0;
+      padding-top: 10px;
+      background: #161633;
+      border-right: 1px solid #2a2a4a;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .tools-sidebar__tab {
+      width: 24px;
+      height: 24px;
+      border: 1px solid #3a3a6a;
+      border-radius: 4px;
+      background: #1e1e3a;
+      color: #d0d0e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .tools-sidebar__tab.active {
+      background: #2a4a8a;
+      border-color: #5a8ad8;
+      color: #c8dcff;
+    }
+
+    .tools-sidebar__content {
+      flex: 1;
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .tools-sidebar__header {
+      font-size: 11px;
+      color: #88aaff;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .tools-sidebar__panel {
+      display: none;
+    }
+
+    .tools-sidebar__panel.active {
+      display: block;
+    }
+
+    .tools-sidebar__empty {
+      font-size: 11px;
+      color: #7a7a96;
+      line-height: 1.5;
+    }
+
+    .tools-sidebar__panel.active {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .notes-editor {
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 0;
+      resize: none;
+      border: none;
+      border-radius: 4px;
+      background: #0c0c1a;
+      color: #f0f0f8;
+      padding: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.45;
+      outline: none;
     }
 
     /* Alle interaktiven Elemente aus der Drag-Region herausnehmen */
@@ -77,7 +206,7 @@
     #btn-close {
       background: #4a1a1a;
       border-color: #8a3a3a;
-      margin-left: auto;
+      margin-left: 4px;
     }
     #btn-close:hover { background: #7a2a2a; }
 
@@ -87,7 +216,7 @@
       position: fixed;
       inset: 30px 0 0 0;
       background: #12122a;
-      z-index: 999;
+      z-index: 11000;
       overflow-y: auto;
       padding: 14px 18px;
       -webkit-app-region: no-drag;
@@ -239,7 +368,9 @@
     .quest-table .col-notes    { width: 200px; }
     .quest-table .col-notes .note-clip {
       color: #888; font-style: italic;
-      display: -webkit-box; -webkit-line-clamp: 3;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
       -webkit-box-orient: vertical; overflow: hidden;
     }
 
@@ -276,7 +407,6 @@
     .col-ql-npc   { width: 200px; color: #99aacc; font-size: 10px; }
     .col-ql-lv    { width: 80px; color: #88ee88; font-size: 10px; }
     .col-ql-prog  { width: 220px; }
-    .col-ql-inv   { }
 
     .ql-bar-wrap  { width: 100%; height: 10px; background: #1e1e3a; border-radius: 5px; overflow: hidden; margin-bottom: 4px; }
     .ql-bar-fill  { height: 100%; background: #3a9a3a; border-radius: 5px; }
@@ -341,14 +471,62 @@
     <!-- Resolution indicator -->
     <span id="res-label" class="label no-drag" style="color:#333; font-size:10px;" title="Game view resolution"></span>
 
+    <div class="toolbar-spacer"></div>
+    <button id="btn-tools-toggle" class="tools-toggle" type="button" onclick="toggleToolsSidebar()" title="Open tools sidebar (Insert)" aria-keyshortcuts="Insert">☰ Tools</button>
+
     <!-- Close button -->
-    <button id="btn-close" onclick="window.flyff.quitApp()" title="Quit">✕</button>
+    <!-- <button id="btn-close" onclick="window.flyff.quitApp()" title="Quit">✕</button> -->
   </div>
+
+  <aside id="tools-sidebar" class="tools-sidebar" aria-label="Tools sidebar">
+    <div class="tools-sidebar__content">
+      <div id="tools-panel-notes" class="tools-sidebar__panel active">
+        <div class="tools-sidebar__header">Notes</div>
+        <textarea id="notes-textarea" class="notes-editor" spellcheck="false" placeholder="Type your notes here…"></textarea>
+      </div>
+    </div>
+    <div class="tools-sidebar__rail" role="tablist" aria-label="Tools tabs">
+      <button class="tools-sidebar__tab active" data-tab="notes" onclick="switchToolsTab('notes')" title="Notes" aria-label="Notes">📝</button>
+    </div>
+  </aside>
 
   <script>
     // ── Initialisierung ───────────────────────────────────────────────────────
 
     let macros = [];
+
+    function syncGameViewVisibility() {
+      const sidebar = document.getElementById('tools-sidebar');
+      const changelog = document.getElementById('changelog-overlay');
+      const guide = document.getElementById('guide-overlay');
+      const sidebarOpen = sidebar?.classList.contains('open');
+      const changelogOpen = changelog?.style.display === 'block';
+      const guideOpen = guide?.style.display === 'block';
+      const shouldShowGameView = !sidebarOpen && !changelogOpen && !guideOpen;
+      window.flyff.setGameViewVisibility(shouldShowGameView);
+    }
+
+    function toggleToolsSidebar() {
+      const sidebar = document.getElementById('tools-sidebar');
+      const toggleBtn = document.getElementById('btn-tools-toggle');
+      
+      sidebar.classList.toggle('open');
+      toggleBtn.classList.toggle('active');
+      
+      const isOpen = sidebar.classList.contains('open');
+      
+      // Geef door aan main.js dat de breedte van het spel aangepast moet worden
+      window.flyff?.setSidebarState?.(isOpen); // Of via jouw preload brug
+    }
+
+    function switchToolsTab(tab) {
+      document.querySelectorAll('.tools-sidebar__tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      document.querySelectorAll('.tools-sidebar__panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `tools-panel-${tab}`);
+      });
+    }
 
     function renderMacroButtons() {
       const area = document.getElementById('macro-area');
@@ -365,7 +543,29 @@
       });
     }
 
+    function syncTextInputFocusState() {
+      const active = document.activeElement;
+      const focusedInTextField = !!active && (
+        active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        active.tagName === 'SELECT' ||
+        active.isContentEditable
+      );
+      window.flyff?.setTextInputFocus?.(focusedInTextField);
+    }
+
+    function handleGlobalHotkeys(event) {
+      if (event.key === 'Insert' || event.code === 'Insert') {
+        event.preventDefault();
+        toggleToolsSidebar();
+      }
+    }
+
     async function init() {
+      document.addEventListener('focusin', syncTextInputFocusState);
+      document.addEventListener('keydown', handleGlobalHotkeys);
+      document.addEventListener('focusout', syncTextInputFocusState);
+
       const state = await window.flyff.getState();
       applyAccountState(state.activeAccount);
       applyRunningState('account1', state.account1Running);
@@ -382,6 +582,20 @@
 
       macros = await window.flyff.getMacros() || [];
       renderMacroButtons();
+
+      const notesInput = document.getElementById('notes-textarea');
+      if (notesInput) {
+        const savedNotes = await window.flyff.getNotes();
+        notesInput.value = savedNotes || '';
+
+        let saveTimer = null;
+        notesInput.addEventListener('input', () => {
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(() => {
+            window.flyff.saveNotes(notesInput.value);
+          }, 250);
+        });
+      }
 
       // Load the gamepad config and start polling.
       // Polling runs here in the renderer main context because navigator.getGamepads()
@@ -595,12 +809,12 @@
         content.innerHTML = html; // Gebruik innerHTML omdat de backend al HTML terugstuurt
       }
       overlay.style.display = 'block';
-      window.flyff.setGameViewVisibility(false);
+      syncGameViewVisibility();
     }
 
     function closeChangelog() {
       document.getElementById('changelog-overlay').style.display = 'none';
-      checkAllOverlaysClosed();
+      syncGameViewVisibility();
     }
 
     // ── Guide-Overlay (Quests & Monsters) ─────────────────────────────────────
@@ -626,20 +840,16 @@
 
       renderGuide();
       overlay.style.display = 'block';
-      window.flyff.setGameViewVisibility(false);
+      syncGameViewVisibility();
     }
 
     function closeGuide() {
       document.getElementById('guide-overlay').style.display = 'none';
-      checkAllOverlaysClosed();
+      syncGameViewVisibility();
     }
 
     function checkAllOverlaysClosed() {
-      const changelog = document.getElementById('changelog-overlay');
-      const guide = document.getElementById('guide-overlay');
-      if (changelog.style.display !== 'block' && guide.style.display !== 'block') {
-        window.flyff.setGameViewVisibility(true);
-      }
+      syncGameViewVisibility();
     }
 
     function switchGuideTab(tab) {
@@ -1135,7 +1345,7 @@
   </div>
 
   <div id="guide-overlay">
-  <div id="promptOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; -webkit-app-region:no-drag;">
+  <div id="promptOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:14000; align-items:center; justify-content:center; -webkit-app-region:no-drag;">
     <div style="background:#17172f; border:1px solid #3a3a6a; border-radius:6px; padding:16px; width:300px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
       <form id="promptForm" onsubmit="event.preventDefault();">
         <label id="promptLabel" style="display:block; margin-bottom:8px; color:#d0d0e8; font-size:12px;"></label>

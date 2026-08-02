@@ -39,7 +39,8 @@ async function initStore() {
     defaults: {
       activeAccount: 'account1',
       hotkeys: DEFAULT_HOTKEYS,
-      windowBounds: { width: DEFAULT_W, height: DEFAULT_H }
+      windowBounds: { width: DEFAULT_W, height: DEFAULT_H },
+      notes: ''
     }
   });
 }
@@ -116,6 +117,7 @@ const gameViews = {
 
 let activeAccount = 'account1';
 let overlayOpen   = false;  // Guide oder Changelog sichtbar → Game-Views versteckt halten
+let textInputFocused = false; // Toolbar/UI text fields should not forward keys to the game
 
 // Virtual mouse position for gamepad delta movement
 const cursor  = { x: DEFAULT_W / 2, y: DEFAULT_H / 2 };
@@ -141,6 +143,11 @@ function createMainWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'ui', 'index.html'));
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (!app.isPackaged) {
+      mainWindow.webContents.openDevTools({ mode: 'detach' });
+    }
+  });
   mainWindow.maximize();
 
   mainWindow.on('resize', () => {
@@ -174,7 +181,14 @@ function createMainWindow() {
   // rather than the focused WebContentsView, so they would otherwise be lost.
   // event.preventDefault() stops the toolbar page from also handling it.
   mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (overlayOpen) return;
+    if (input.type === 'keyDown' && (input.key === 'Insert' || input.code === 'Insert')) {
+      event.preventDefault();
+      mainWindow?.webContents.executeJavaScript('toggleToolsSidebar();').catch(() => {});
+      return;
+    }
+
+    if (overlayOpen || textInputFocused) return;
+
     const view = gameViews[activeAccount];
     if (!view?.webContents) return;
 
@@ -289,10 +303,27 @@ function closeAccount(account) {
 
 // Sets bounds and visibility for views based on the active account.
 // If an overlay is open, the active view stays hidden until it is closed.
+let sidebarOpen = false; // Houd de status van de sidebar bij
+
+// Voeg een IPC-handler toe om de sidebar-status te ontvangen
+ipcMain.on('set-sidebar-state', (_, isOpen) => {
+  sidebarOpen = isOpen;
+  updateViewBounds();
+});
+
 function updateViewBounds() {
   if (!mainWindow) return;
   const [w, h] = mainWindow.getContentSize();
-  const activeBounds = { x: 0, y: TOOLBAR_H, width: w, height: h - TOOLBAR_H };
+  
+  // Als de sidebar open is, trek de breedte van de sidebar (280px) van de game-view af
+  const sidebarWidth = sidebarOpen ? 280 : 0;
+  
+  const activeBounds = { 
+    x: 0, 
+    y: TOOLBAR_H, 
+    width: w - sidebarWidth, 
+    height: h - TOOLBAR_H 
+  };
   const hiddenBounds = { x: -w - 100, y: TOOLBAR_H, width: w, height: h - TOOLBAR_H };
 
   for (const [account, view] of Object.entries(gameViews)) {
@@ -413,6 +444,21 @@ function registerShortcuts() {
       mainWindow?.setFullScreen(!mainWindow.isFullScreen());
     });
   } catch {}
+
+  // Insert: Tools-Sidebar umschalten
+  try {
+    globalShortcut.register('Insert', () => {
+      mainWindow?.webContents.executeJavaScript(`
+        if (typeof toggleToolsSidebar === 'function') {
+          toggleToolsSidebar();
+        } else if (typeof window.toggleToolsSidebar === 'function') {
+          window.toggleToolsSidebar();
+        }
+      `).catch(() => {});
+    });
+  } catch (e) {
+    console.error('Shortcut konnte nicht registriert werden: Insert', e.message);
+  }
 
   // Follow + Board Hotkey (konfigurierbar, Standard: ,)
   // Single-character shortcuts are NOT registered globally to allow typing.
@@ -1012,6 +1058,9 @@ function setupIPC() {
   ipcMain.on('follow-board',        (_, acc)  => sendFollowBoard(acc));
   ipcMain.on('open-settings',       ()        => openSettings());
   ipcMain.on('close-settings',      ()        => settingsWindow?.close());
+  ipcMain.on('set-text-input-focus', (_, focused) => {
+    textInputFocused = !!focused;
+  });
   ipcMain.on('open-quest-url',      (_, url)  => openQuestUrl(url));
   ipcMain.on('close-quest-window',  ()        => questWindow?.close());
   ipcMain.on('set-game-view-visibility', (_, visible) => {
@@ -1023,6 +1072,12 @@ function setupIPC() {
   ipcMain.handle('get-view-size', () => {
     const [w, h] = mainWindow.getContentSize();
     return { w, h: h - TOOLBAR_H };
+  });
+
+  ipcMain.handle('get-notes', () => store.get('notes', ''));
+
+  ipcMain.on('save-notes', (_, notes) => {
+    store.set('notes', String(notes ?? ''));
   });
 
   ipcMain.handle('get-state', () => ({

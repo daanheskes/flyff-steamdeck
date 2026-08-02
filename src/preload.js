@@ -32,7 +32,10 @@ contextBridge.exposeInMainWorld('flyff', {
   saveGamepadConfig:    (cfg)           => ipcRenderer.send('save-gamepad-config', cfg),
   saveHotkeys:          (keys)          => ipcRenderer.send('save-hotkeys', keys),
   saveMacros:           (macros)        => ipcRenderer.send('save-macros', macros),
-
+  getNotes:             ()              => ipcRenderer.invoke('get-notes'),
+  saveNotes:            (notes)        => ipcRenderer.send('save-notes', notes),
+  setTextInputFocus:    (focused)       => ipcRenderer.send('set-text-input-focus', focused),
+  setSidebarState: (isOpen) => ipcRenderer.send('set-sidebar-state', isOpen),
   // --- Run macros ---
   runMacro: (id) => ipcRenderer.send('run-macro', id),
 
